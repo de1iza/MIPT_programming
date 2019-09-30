@@ -3,9 +3,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <typeinfo>
+#include <wchar.h>
 
 #define CANARY_ALIVE 0xABCD
-#define POISON -1
+#define POISON 13377331
 #define DEBUG 1
 
 #ifdef DEBUG
@@ -130,7 +131,8 @@ void StackInit(stack_t* stack, size_t max_size){
     stack->max_size = max_size;
     stack->size = 0;
     stack->data = (elem_t*) calloc(max_size, sizeof(elem_t));
-    memset((stack)->data, -1, max_size * sizeof(elem_t));
+    //memset((stack)->data, -1, max_size * sizeof(elem_t));
+    wmemset((wchar_t*)(stack)->data, POISON, max_size * sizeof(elem_t));
     stack->canary2 = CANARY_ALIVE;
 
     STACK_ASSERT(stack);
