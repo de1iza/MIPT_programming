@@ -43,7 +43,7 @@ const size_t RESIZE_VAL = 20;
 #define PRINT_INTS(stack) {                                                     \
     PRINT_CANARY(stack, 1);                                                     \
     for (int i = 0; i < (stack)->max_size; ++i){                                \
-        printf("! %s data[%d]: %s %d ", CYAN, i, RESET, (stack)->data[i]);      \
+        printf("! %s data[%02d]: %s %d ", CYAN, i, RESET, (stack)->data[i]);      \
         ShowElementStatus(stack->data[i]);                                      \
         printf("\n");                                                           \
     }                                                                           \
@@ -125,11 +125,10 @@ int main() {
     StackPush(&stk, 34);
     StackPush(&stk, 32);
     StackPush(&stk, 1);
-
-    StackPop(&stk);
-    StackPop(&stk);
-    StackPop(&stk);
-    StackPop(&stk);
+    StackPush(&stk, 1);
+    StackPush(&stk, 1);
+    StackPush(&stk, 1);
+    StackPush(&stk, 1);
 
     StackDelete(&stk);
 
@@ -253,17 +252,23 @@ void ShowElementStatus(elem_t value){
     if (value == POISON)  printf(RED "(POISON)" RESET);
 }
 
-
+/*! Resizes stack data array
+    @param stack pointer to stack structure
+*/
 void StackResize(stack_t* stack){
     STACK_ASSERT(stack);
 
     int prev_size = stack->max_size;
+    int new_size = prev_size + RESIZE_VAL + 2;
 
-    stack->data = (elem_t*) realloc(stack->data - 1, (prev_size + RESIZE_VAL + 2) * sizeof(elem_t)) + 1;
+    void* new_mem_block = realloc((void*) (stack->data - 1), new_size * sizeof(elem_t));
 
-    wmemset((wchar_t*)(stack->data + prev_size), POISON, (RESIZE_VAL + 1) * sizeof(elem_t));
+    stack->data = (elem_t*) new_mem_block + 1;
+
+    wmemset((wchar_t*)((stack)->data + prev_size), POISON, new_size - prev_size + 1);
 
     stack->max_size += RESIZE_VAL;
+
     stack->data[stack->max_size] = (elem_t) CANARY_ALIVE;
 
     STACK_ASSERT(stack);
