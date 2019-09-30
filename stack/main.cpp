@@ -42,15 +42,15 @@ const char* error_strings[] = {"OK",
 }
 
 #define DUMP_ERROR(stack, error){                                                                          \
-    printf("! %s ERROR in %s \"%s\" [%p] %s \n", RED, typeid(stack).name(), stack->name, stack, RESET);    \
+    printf("! %s ASSERTION FAILED %s in file %s, line %d\n", RED, RESET, __FILE__, __LINE__ );             \
     printf("! %s %s %s\n", RED, error_strings[error], RESET);                                              \
+    printf("!  %s \"%s\" [%p] \n", typeid(stack).name(), stack->name, stack);                              \
     printf("! %s max_size: %s %d\n", CYAN, RESET, stack->max_size);                                        \
     printf("! %s size: %s %d\n", CYAN, RESET, stack->size);                                                \
     printf("! %s data %s [%p]\n", CYAN, RESET, stack->data);                                               \
     printf("! %s canary1: %s 0x%x (Expected 0x%x)\n", CYAN, RESET, stack->canary1, CANARY_ALIVE);          \
     printf("! %s canary2: %s 0x%x (Expected 0x%x)\n", CYAN, RESET, stack->canary2, CANARY_ALIVE);          \
-    if (error != INVALID_STACK_SIZE || error == INVALID_STACK_SIZE)                                        \
-            PRINT_STACK_ELEMS(stack);                                                                      \
+    PRINT_STACK_ELEMS(stack);                                                                              \
 }
 
 #define PRINT_STACK_ELEMS(stack){                                                   \
