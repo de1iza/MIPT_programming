@@ -5,7 +5,7 @@
 #include <typeinfo>
 #include <wchar.h>
 
-#define CANARY_ALIVE 0xABCD
+#define CANARY_ALIVE 0xAB
 #define POISON 13377331
 #define DEBUG 1
 
@@ -21,6 +21,13 @@
     #define STACK_ASSERT(stack) ;
 #endif
 
+#define PRINT_CANARY(stack, canary_num){                    \
+    if (canary_num == 1)                                    \
+        printf("0x%x\n", (stack)->data[-1]);                \
+    else                                                    \
+        printf("0x%x\n", (stack)->data[stack->max_size]);   \
+}
+
 #define PRINT_STACK_ELEMS(stack){                                                   \
     if (typeid((stack)->data[0]) == typeid(int)) { PRINT_INTS(stack); }             \
     else if (typeid((stack)->data[0]) == typeid(float)) { PRINT_FLOATS(stack); }    \
@@ -32,27 +39,33 @@
 }
 
 #define PRINT_INTS(stack) {                                                     \
+    PRINT_CANARY(stack, 1);                                                     \
     for (int i = 0; i < (stack)->max_size; ++i){                                \
         printf("! %s data[%d]: %s %d ", CYAN, i, RESET, (stack)->data[i]);      \
         ShowElementStatus(stack->data[i]);                                      \
         printf("\n");                                                           \
     }                                                                           \
+    PRINT_CANARY(stack, 2);                                                     \
 }
 
 #define PRINT_FLOATS(stack) {                                                   \
+    PRINT_CANARY(stack, 1);                                                     \
     for (int i = 0; i < (stack)->size; ++i){                                    \
         printf("! %s data[%d]: %s %g\n", CYAN, i, RESET, (stack)->data[i]);     \
         ShowElementStatus(stack->data[i]);                                      \
         printf("\n");                                                           \
     }                                                                           \
+    PRINT_CANARY(stack, 2);                                                     \
 }
 
 #define PRINT_CHARS(stack) {                                                    \
+    PRINT_CANARY(stack, 1);                                                     \
     for (int i = 0; i < (stack)->size; ++i)  {                                  \
         printf("! %s data[%d]: %s %c\n", CYAN, i, RESET, (stack)->data[i]);     \
         ShowElementStatus(stack->data[i]);                                      \
         printf("\n");                                                           \
     }                                                                           \
+    PRINT_CANARY(stack, 2);                                                     \
 }
 
 #define STACK_INIT(stack, max_size){    \
@@ -130,12 +143,17 @@ void StackInit(stack_t* stack, size_t max_size){
     stack->canary1 = CANARY_ALIVE;
     stack->max_size = max_size;
     stack->size = 0;
-    stack->data = (elem_t*) calloc(max_size, sizeof(elem_t));
+    stack->data = (elem_t*) calloc(max_size + 2, sizeof(elem_t)) + 1;
     //memset((stack)->data, -1, max_size * sizeof(elem_t));
     wmemset((wchar_t*)(stack)->data, POISON, max_size * sizeof(elem_t));
+
+    stack->data[-1] = (elem_t) CANARY_ALIVE;
+    stack->data[max_size] = (elem_t) CANARY_ALIVE;
+
     stack->canary2 = CANARY_ALIVE;
 
     STACK_ASSERT(stack);
+
 
 }
 
@@ -145,7 +163,7 @@ void StackInit(stack_t* stack, size_t max_size){
 void StackDelete(stack_t* stack){
     STACK_ASSERT(stack);
 
-    free(stack->data);
+    free(stack->data - 1);
     stack->data = nullptr;
     stack->size = 0;
     stack->max_size = 0;
