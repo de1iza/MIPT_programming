@@ -7,50 +7,12 @@
 #define CANARY_ALIVE 0xABCD
 #define POISON -1
 
-typedef int elem_t;
-
-struct stack_t{
-    int canary1;
-    int max_size;
-    int size;
-    const char* name;
-    elem_t* data;
-    int canary2;
-
-};
-
-enum StackError{
-    OK,
-    NULL_STACK_PTR,
-    NULL_DATA_PTR,
-    INVALID_STACK_SIZE,
-    CANARY_DEAD,
-};
-
-const char* error_strings[] = {"OK",
-                               "NULL_STACK_PTR",
-                               "NULL_DATA_PTR",
-                               "INVALID_STACK_SIZE",
-                               "CANARY_DEAD"};
-
 #define STACK_ASSERT(stack){                    \
     StackError error = CheckStack(stack);       \
     if (error) {                                \
-        DUMP_ERROR(stack, error);               \
+        DumpStack(stack, error);                \
         exit(error);                            \
     }                                           \
-}
-
-#define DUMP_ERROR(stack, error){                                                                          \
-    printf("! %s ASSERTION FAILED %s in file %s, line %d\n", RED, RESET, __FILE__, __LINE__ );             \
-    printf("! %s %s %s\n", RED, error_strings[error], RESET);                                              \
-    printf("!  %s \"%s\" [%p] \n", typeid(stack).name(), stack->name, stack);                              \
-    printf("! %s max_size: %s %d\n", CYAN, RESET, stack->max_size);                                        \
-    printf("! %s size: %s %d\n", CYAN, RESET, stack->size);                                                \
-    printf("! %s data %s [%p]\n", CYAN, RESET, stack->data);                                               \
-    printf("! %s canary1: %s 0x%x (Expected 0x%x)\n", CYAN, RESET, stack->canary1, CANARY_ALIVE);          \
-    printf("! %s canary2: %s 0x%x (Expected 0x%x)\n", CYAN, RESET, stack->canary2, CANARY_ALIVE);          \
-    PRINT_STACK_ELEMS(stack);                                                                              \
 }
 
 #define PRINT_STACK_ELEMS(stack){                                                   \
@@ -96,10 +58,37 @@ const char* error_strings[] = {"OK",
 #define CYAN "\x1B[36m"
 #define RESET "\x1B[0m"
 
+typedef int elem_t;
+
+struct stack_t{
+    int canary1;
+    int max_size;
+    int size;
+    const char* name;
+    elem_t* data;
+    int canary2;
+
+};
+
+enum StackError{
+    OK,
+    NULL_STACK_PTR,
+    NULL_DATA_PTR,
+    INVALID_STACK_SIZE,
+    CANARY_DEAD,
+};
+
+const char* error_strings[] = {"OK",
+                               "NULL_STACK_PTR",
+                               "NULL_DATA_PTR",
+                               "INVALID_STACK_SIZE",
+                               "CANARY_DEAD"};
+
 void StackInit(stack_t* stack, size_t max_size);
 void StackDelete(stack_t* stack);
 void StackPush(stack_t* stack, elem_t value);
 elem_t StackPop(stack_t* stack);
+void DumpStack(stack_t* stack, StackError error);
 bool IsEmpty(stack_t* stack);
 StackError CheckStack(stack_t* stack);
 void ShowElementStatus(elem_t value);
@@ -182,6 +171,22 @@ elem_t StackPop(stack_t* stack){
     STACK_ASSERT(stack);
 
     return value;
+}
+
+/*! Prints full info about error and all stack structure fields
+    @param stack pointer to stack structure
+    @param error error code
+*/
+void DumpStack(stack_t* stack, StackError error){
+    printf("! %s ASSERTION FAILED %s in file %s, line %d\n", RED, RESET, __FILE__, __LINE__ );
+    printf("! %s %s %s\n", RED, error_strings[error], RESET);
+    printf("!  %s \"%s\" [%p] \n", typeid(stack).name(), stack->name, stack);
+    printf("! %s max_size: %s %d\n", CYAN, RESET, stack->max_size);
+    printf("! %s size: %s %d\n", CYAN, RESET, stack->size);
+    printf("! %s data %s [%p]\n", CYAN, RESET, stack->data);
+    printf("! %s canary1: %s 0x%x (Expected 0x%x)\n", CYAN, RESET, stack->canary1, CANARY_ALIVE);
+    printf("! %s canary2: %s 0x%x (Expected 0x%x)\n", CYAN, RESET, stack->canary2, CANARY_ALIVE);
+    PRINT_STACK_ELEMS(stack);
 }
 
 /*! Validates stack fields and returns error code (or 0 if everything is ok)
