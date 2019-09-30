@@ -9,6 +9,8 @@
 #define POISON 13377331
 #define DEBUG 1
 
+const size_t RESIZE_VAL = 20;
+
 #ifdef DEBUG
     #define STACK_ASSERT(stack){                    \
         StackError error = CheckStack(stack);       \
@@ -111,6 +113,7 @@ void DumpStack(stack_t* stack, StackError error);
 bool IsEmpty(stack_t* stack);
 StackError CheckStack(stack_t* stack);
 void ShowElementStatus(elem_t value);
+void StackResize(stack_t* stack);
 
 
 int main() {
@@ -145,7 +148,8 @@ void StackInit(stack_t* stack, size_t max_size){
     stack->size = 0;
     stack->data = (elem_t*) calloc(max_size + 2, sizeof(elem_t)) + 1;
     //memset((stack)->data, -1, max_size * sizeof(elem_t));
-    wmemset((wchar_t*)(stack)->data, POISON, max_size * sizeof(elem_t));
+    wmemset((wchar_t*) ((stack)->data - 1), POISON, max_size + 2);
+
 
     stack->data[-1] = (elem_t) CANARY_ALIVE;
     stack->data[max_size] = (elem_t) CANARY_ALIVE;
@@ -177,6 +181,9 @@ void StackDelete(stack_t* stack){
 void StackPush(stack_t* stack, elem_t value){
     STACK_ASSERT(stack);
 
+    if (stack->size == stack->max_size){
+        StackResize(stack);
+    }
     stack->data[stack->size++] = value;
 
     STACK_ASSERT(stack);
@@ -244,4 +251,21 @@ bool IsEmpty(stack_t* stack){
 */
 void ShowElementStatus(elem_t value){
     if (value == POISON)  printf(RED "(POISON)" RESET);
+}
+
+
+void StackResize(stack_t* stack){
+    STACK_ASSERT(stack);
+
+    int prev_size = stack->max_size;
+
+    stack->data = (elem_t*) realloc(stack->data - 1, (prev_size + RESIZE_VAL + 2) * sizeof(elem_t)) + 1;
+
+    wmemset((wchar_t*)(stack->data + prev_size), POISON, (RESIZE_VAL + 1) * sizeof(elem_t));
+
+    stack->max_size += RESIZE_VAL;
+    stack->data[stack->max_size] = (elem_t) CANARY_ALIVE;
+
+    STACK_ASSERT(stack);
+
 }
