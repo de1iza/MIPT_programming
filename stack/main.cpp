@@ -6,14 +6,19 @@
 
 #define CANARY_ALIVE 0xABCD
 #define POISON -1
+#define DEBUG 1
 
-#define STACK_ASSERT(stack){                    \
-    StackError error = CheckStack(stack);       \
-    if (error) {                                \
-        DumpStack(stack, error);                \
-        exit(error);                            \
-    }                                           \
-}
+#ifdef DEBUG
+    #define STACK_ASSERT(stack){                    \
+        StackError error = CheckStack(stack);       \
+        if (error) {                                \
+            DumpStack(stack, error);                \
+            exit(error);                            \
+        }                                           \
+    }
+#else
+    #define STACK_ASSERT(stack) ;
+#endif
 
 #define PRINT_STACK_ELEMS(stack){                                                   \
     if (typeid((stack)->data[0]) == typeid(int)) { PRINT_INTS(stack); }             \
