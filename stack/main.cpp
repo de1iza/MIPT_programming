@@ -4,13 +4,18 @@
 #include <stdlib.h>
 #include <typeinfo>
 
+#define CANARY_ALIVE 0xABCD
+#define POISON -1
+
 typedef int elem_t;
 
 struct stack_t{
+    int canary1;
     int max_size;
     int size;
     const char* name;
     elem_t* data;
+    int canary2;
 
 };
 
@@ -19,12 +24,14 @@ enum StackError{
     NULL_STACK_PTR,
     NULL_DATA_PTR,
     INVALID_STACK_SIZE,
+    CANARY_DEAD,
 };
 
 const char* error_strings[] = {"OK",
                                "NULL_STACK_PTR",
                                "NULL_DATA_PTR",
-                               "INVALID_STACK_SIZE"};
+                               "INVALID_STACK_SIZE",
+                               "CANARY_DEAD"};
 
 #define STACK_ASSERT(stack){                    \
     StackError error = CheckStack(stack);       \
@@ -34,14 +41,16 @@ const char* error_strings[] = {"OK",
     }                                           \
 }
 
-#define DUMP_ERROR(stack, error){                                       \
-    printf("! ERROR in stack_t \"%s\" [%p]\n", stack->name, stack);     \
-    printf("! %s\n", error_strings[error]);                             \
-    printf("! max_size: %d\n", stack->max_size);                        \
-    printf("! size: %d\n", stack->size);                                \
-    printf("! data [%p]\n", stack->data);                               \
-    if (error != INVALID_STACK_SIZE)                                    \
-            PRINT_STACK_ELEMS(stack);                                   \
+#define DUMP_ERROR(stack, error){                                                                          \
+    printf("! %s ERROR in %s \"%s\" [%p] %s \n", RED, typeid(stack).name(), stack->name, stack, RESET);    \
+    printf("! %s %s %s\n", RED, error_strings[error], RESET);                                              \
+    printf("! %s max_size: %s %d\n", CYAN, RESET, stack->max_size);                                        \
+    printf("! %s size: %s %d\n", CYAN, RESET, stack->size);                                                \
+    printf("! %s data %s [%p]\n", CYAN, RESET, stack->data);                                               \
+    printf("! %s canary1: %s 0x%x (Expected 0x%x)\n", CYAN, RESET, stack->canary1, CANARY_ALIVE);          \
+    printf("! %s canary2: %s 0x%x (Expected 0x%x)\n", CYAN, RESET, stack->canary2, CANARY_ALIVE);          \
+    if (error != INVALID_STACK_SIZE || error == INVALID_STACK_SIZE)                                        \
+            PRINT_STACK_ELEMS(stack);                                                                      \
 }
 
 #define PRINT_STACK_ELEMS(stack){                                                   \
@@ -54,19 +63,28 @@ const char* error_strings[] = {"OK",
     }                                                                               \
 }
 
-#define PRINT_INTS(stack) {                                   \
-    for (int i = 0; i < (stack)->size; ++i)                   \
-        printf("! data[%d] : %d\n", i, (stack)->data[i]);     \
+#define PRINT_INTS(stack) {                                                     \
+    for (int i = 0; i < (stack)->max_size; ++i){                                \
+        printf("! %s data[%d]: %s %d ", CYAN, i, RESET, (stack)->data[i]);      \
+        ShowElementStatus(stack->data[i]);                                      \
+        printf("\n");                                                           \
+    }                                                                           \
 }
 
-#define PRINT_FLOATS(stack) {                                 \
-    for (int i = 0; i < (stack)->size; ++i)                   \
-        printf("! data[%d] : %g\n", i, (stack)->data[i]);     \
+#define PRINT_FLOATS(stack) {                                                   \
+    for (int i = 0; i < (stack)->size; ++i){                                    \
+        printf("! %s data[%d]: %s %g\n", CYAN, i, RESET, (stack)->data[i]);     \
+        ShowElementStatus(stack->data[i]);                                      \
+        printf("\n");                                                           \
+    }                                                                           \
 }
 
-#define PRINT_CHARS(stack) {                                  \
-    for (int i = 0; i < (stack)->size; ++i)                   \
-        printf("! data[%d] : %c\n", i, (stack)->data[i]);     \
+#define PRINT_CHARS(stack) {                                                    \
+    for (int i = 0; i < (stack)->size; ++i)  {                                  \
+        printf("! %s data[%d]: %s %c\n", CYAN, i, RESET, (stack)->data[i]);     \
+        ShowElementStatus(stack->data[i]);                                      \
+        printf("\n");                                                           \
+    }                                                                           \
 }
 
 #define STACK_INIT(stack, max_size){    \
@@ -74,17 +92,21 @@ const char* error_strings[] = {"OK",
     StackInit(&stack, max_size);        \
 }
 
+#define RED "\x1B[31m"
+#define CYAN "\x1B[36m"
+#define RESET "\x1B[0m"
+
 void StackInit(stack_t* stack, size_t max_size);
 void StackDelete(stack_t* stack);
 void StackPush(stack_t* stack, elem_t value);
 elem_t StackPop(stack_t* stack);
 bool IsEmpty(stack_t* stack);
 StackError CheckStack(stack_t* stack);
+void ShowElementStatus(elem_t value);
 
 
 int main() {
     const int SIZE = 10;
-
     stack_t stk = {};
 
     STACK_INIT(stk, SIZE);
@@ -93,6 +115,8 @@ int main() {
     StackPush(&stk, 32);
     StackPush(&stk, 1);
 
+    StackPop(&stk);
+    StackPop(&stk);
     StackPop(&stk);
     StackPop(&stk);
 
@@ -104,9 +128,12 @@ int main() {
 void StackInit(stack_t* stack, size_t max_size){
     assert(max_size);
 
+    stack->canary1 = CANARY_ALIVE;
     stack->max_size = max_size;
     stack->size = 0;
     stack->data = (elem_t*) calloc(max_size, sizeof(elem_t));
+    memset((stack)->data, -1, max_size * sizeof(elem_t));
+    stack->canary2 = CANARY_ALIVE;
 
     STACK_ASSERT(stack);
 
@@ -135,6 +162,7 @@ elem_t StackPop(stack_t* stack){
     STACK_ASSERT(stack);
 
     elem_t value = stack->data[--stack->size];
+    stack->data[stack->size] = POISON;
 
     STACK_ASSERT(stack);
 
@@ -149,6 +177,8 @@ StackError CheckStack(stack_t* stack){
         return NULL_DATA_PTR;
     if (stack->size < 0 || stack->size > stack->max_size)
         return INVALID_STACK_SIZE;
+    if (stack->canary1 != CANARY_ALIVE || stack->canary2 != CANARY_ALIVE)
+        return CANARY_DEAD;
     return OK;
 }
 
@@ -156,4 +186,8 @@ bool IsEmpty(stack_t* stack){
     STACK_ASSERT(stack);
 
     return (stack->size == 0);
+}
+
+void ShowElementStatus(elem_t value){
+    if (value == POISON)  printf(RED "(POISON)" RESET);
 }
