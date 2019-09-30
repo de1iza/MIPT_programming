@@ -86,6 +86,7 @@ struct stack_t{
     int max_size;
     int size;
     const char* name;
+    unsigned int hash;
     elem_t* data;
     int canary2;
 
@@ -96,14 +97,16 @@ enum StackError{
     NULL_STACK_PTR,
     NULL_DATA_PTR,
     INVALID_STACK_SIZE,
-    CANARY_DEAD,
+    STRUCTURE_CANARY_DEAD,
+    DATA_CANARY_DEAD,
 };
 
 const char* error_strings[] = {"OK",
                                "NULL_STACK_PTR",
                                "NULL_DATA_PTR",
                                "INVALID_STACK_SIZE",
-                               "CANARY_DEAD"};
+                               "STRUCTURE_CANARY_DEAD",
+                               "DATA_CANARY_DEAD"};
 
 void StackInit(stack_t* stack, size_t max_size);
 void StackDelete(stack_t* stack);
@@ -232,7 +235,9 @@ StackError CheckStack(stack_t* stack){
     if (stack->size < 0 || stack->size > stack->max_size)
         return INVALID_STACK_SIZE;
     if (stack->canary1 != CANARY_ALIVE || stack->canary2 != CANARY_ALIVE)
-        return CANARY_DEAD;
+        return STRUCTURE_CANARY_DEAD;
+    if (stack->data[-1] != CANARY_ALIVE || stack->data[stack->max_size] != CANARY_ALIVE)
+        return DATA_CANARY_DEAD;
     return OK;
 }
 
