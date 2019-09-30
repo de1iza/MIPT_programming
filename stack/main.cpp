@@ -125,6 +125,10 @@ int main() {
     return 0;
 }
 
+/*! Function to initialize stack (constructor)
+    @param stack pointer to stack structure
+    @param max_size size of a full stack
+*/
 void StackInit(stack_t* stack, size_t max_size){
     assert(max_size);
 
@@ -139,6 +143,9 @@ void StackInit(stack_t* stack, size_t max_size){
 
 }
 
+/*! Function to delete stack (destructor)
+    @param stack pointer to stack structure
+*/
 void StackDelete(stack_t* stack){
     STACK_ASSERT(stack);
 
@@ -149,6 +156,10 @@ void StackDelete(stack_t* stack){
 
 }
 
+/*! Adds new element to stack
+    @param stack pointer to stack structure
+    @param value element to add
+*/
 void StackPush(stack_t* stack, elem_t value){
     STACK_ASSERT(stack);
 
@@ -158,6 +169,10 @@ void StackPush(stack_t* stack, elem_t value){
 
 }
 
+/*! Deletes top element from stack
+    @param stack pointer to stack structure
+    @return value top element
+*/
 elem_t StackPop(stack_t* stack){
     STACK_ASSERT(stack);
 
@@ -169,7 +184,10 @@ elem_t StackPop(stack_t* stack){
     return value;
 }
 
-
+/*! Validates stack fields and returns error code (or 0 if everything is ok)
+    @param stack pointer to stack structure
+    @return error code
+*/
 StackError CheckStack(stack_t* stack){
     if (stack == nullptr)
         return NULL_STACK_PTR;
@@ -182,12 +200,18 @@ StackError CheckStack(stack_t* stack){
     return OK;
 }
 
+/*! Checks is stack is empty
+    @param stack pointer to stack structure
+*/
 bool IsEmpty(stack_t* stack){
     STACK_ASSERT(stack);
 
     return (stack->size == 0);
 }
 
+/*! Prints "poison" label if stack element is poisoned
+    @param value stack element
+*/
 void ShowElementStatus(elem_t value){
     if (value == POISON)  printf(RED "(POISON)" RESET);
 }
