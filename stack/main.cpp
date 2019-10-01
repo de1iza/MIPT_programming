@@ -29,7 +29,7 @@ int main() {
 
     StackPop(&stk);
 
-    for (int i = 0; i < 85; ++i){
+    for (int i = 0; i < 25; ++i){
         StackPop(&stk);}
 
     StackDelete(&stk);
@@ -180,9 +180,9 @@ void StackResize(stack_t* stack, int resize_val){
     int prev_size = stack->max_size;
     int new_size = prev_size + resize_val + 2;
 
-    void* new_mem_block = realloc((void*) (stack->data - 1), new_size * sizeof(elem_t));
+    elem_t* new_mem_block = (elem_t*) realloc(stack->data - 1, new_size * sizeof(elem_t));
 
-    stack->data = (elem_t*) new_mem_block + 1;
+    stack->data = new_mem_block + 1;
 
     wmemset((wchar_t*)((stack)->data + prev_size), POISON, new_size - prev_size + 1);
 
