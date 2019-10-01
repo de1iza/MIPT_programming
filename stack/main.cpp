@@ -12,7 +12,7 @@
 const size_t RESIZE_VAL = 20;
 
 #ifdef DEBUG
-    #define STACK_ASSERT(stack){                    \
+#define STACK_ASSERT(stack){                        \
         StackError error = CheckStack(stack);       \
         if (error) {                                \
             DumpStack(stack, error);                \
@@ -20,7 +20,7 @@ const size_t RESIZE_VAL = 20;
         }                                           \
     }
 #else
-    #define STACK_ASSERT(stack) ;
+#define STACK_ASSERT(stack) ;
 #endif
 
 #define PRINT_CANARY(stack, canary_num){                    \
@@ -135,7 +135,14 @@ int main() {
     StackPush(&stk, 1);
     StackPush(&stk, 1);
     StackPush(&stk, 1);
+    /*StackPush(&stk, 1);
     StackPush(&stk, 1);
+    StackPush(&stk, 1);
+    StackPush(&stk, 1);
+    for (int i = 0; i < 65; ++i){
+        StackPush(&stk, 6);}*/
+
+    StackPop(&stk);
 
     StackDelete(&stk);
 
@@ -153,9 +160,7 @@ void StackInit(stack_t* stack, size_t max_size){
     stack->max_size = max_size;
     stack->size = 0;
     stack->data = (elem_t*) calloc(max_size + 2, sizeof(elem_t)) + 1;
-    //memset((stack)->data, -1, max_size * sizeof(elem_t));
     wmemset((wchar_t*) ((stack)->data - 1), POISON, max_size + 2);
-
 
     stack->data[-1] = (elem_t) CANARY_ALIVE;
     stack->data[max_size] = (elem_t) CANARY_ALIVE;
