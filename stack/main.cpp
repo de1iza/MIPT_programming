@@ -29,7 +29,7 @@ int main() {
 
     StackPop(&stk);
 
-    for (int i = 0; i < 25; ++i){
+    for (int i = 0; i < 85; ++i){
         StackPop(&stk);}
 
     StackDelete(&stk);
@@ -142,7 +142,9 @@ StackError CheckStack(stack_t* stack){
         return NULL_STACK_PTR;
     if (stack->data == nullptr)
         return NULL_DATA_PTR;
-    if (stack->size < 0 || stack->size > stack->max_size)
+    if (stack->size < 0)
+        return UNDERFLOW;
+    if  (stack->size > stack->max_size)
         return INVALID_STACK_SIZE;
     if (stack->canary1 != CANARY_ALIVE || stack->canary2 != CANARY_ALIVE)
         return STRUCTURE_CANARY_DEAD;

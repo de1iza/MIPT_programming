@@ -101,6 +101,7 @@ enum StackError{
     STRUCTURE_CANARY_DEAD,
     DATA_CANARY_DEAD,
     WRONG_HASH,
+    UNDERFLOW,
 };
 
 const char* error_strings[] = {"OK",
@@ -109,7 +110,8 @@ const char* error_strings[] = {"OK",
                                "INVALID_STACK_SIZE",
                                "STRUCTURE_CANARY_DEAD",
                                "DATA_CANARY_DEAD",
-                               "WRONG_HASH"};
+                               "WRONG_HASH",
+                               "UNDERFLOW"};
 
 
 void StackInit(stack_t* stack, size_t max_size);
