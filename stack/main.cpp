@@ -8,32 +8,33 @@
 #include "stack.h"
 
 
+#define TEST1_FIX 1
+
 int main() {
-    const int SIZE = 10;
+    const int DEFAULT_SIZE = 10;
     stack_t stk = {};
 
-    STACK_INIT(stk, SIZE);
+    STACK_INIT(stk, DEFAULT_SIZE);
 
     StackPush(&stk, 34);
     StackPush(&stk, 32);
     StackPush(&stk, 1);
     StackPush(&stk, 1);
     StackPush(&stk, 1);
-    StackPush(&stk, 1);
-    StackPush(&stk, 1);
-    StackPush(&stk, 1);
-    StackPush(&stk, 1);
-    StackPush(&stk, 1);
-    for (int i = 0; i < 65; ++i){
-        StackPush(&stk, 6);}
 
-    StackPop(&stk);
+    //StackPop(&stk);
 
     for (int i = 0; i < 25; ++i){
         StackPop(&stk);}
 
-    StackDelete(&stk);
 
+    //stk.data[233] = 5;
+
+    StackPush(&stk, 1);
+
+    STACK_ASSERT(&stk);
+
+    StackDelete(&stk);
     return 0;
 }
 
@@ -50,8 +51,7 @@ void StackInit(stack_t* stack, size_t max_size){
     stack->data = (elem_t*) calloc(max_size + 2, sizeof(elem_t)) + 1;
     wmemset((wchar_t*) ((stack)->data - 1), POISON, max_size + 2);
 
-    stack->data[-1] = (elem_t) CANARY_ALIVE;
-    stack->data[max_size] = (elem_t) CANARY_ALIVE;
+    SetCanaries(stack->data, stack->max_size);
 
     stack->canary2 = CANARY_ALIVE;
 
@@ -110,7 +110,6 @@ elem_t StackPop(stack_t* stack){
         StackResize(stack, -RESIZE_VAL);
     }*/
 
-
     STACK_ASSERT(stack);
 
     return value;
@@ -142,9 +141,9 @@ StackError CheckStack(stack_t* stack){
         return NULL_STACK_PTR;
     if (stack->data == nullptr)
         return NULL_DATA_PTR;
-    if (stack->size < 0)
+    if (stack->size == -1)
         return UNDERFLOW;
-    if  (stack->size > stack->max_size)
+    if  (stack->size > stack->max_size || stack->size < 0)
         return INVALID_STACK_SIZE;
     if (stack->canary1 != CANARY_ALIVE || stack->canary2 != CANARY_ALIVE)
         return STRUCTURE_CANARY_DEAD;
@@ -177,26 +176,27 @@ void ShowElementStatus(elem_t value){
 void StackResize(stack_t* stack, int resize_val){
     STACK_ASSERT(stack);
 
-    int prev_size = stack->max_size;
+    int prev_size = stack->size;
     int new_size = prev_size + resize_val + 2;
 
-    elem_t* new_mem_block = (elem_t*) realloc(stack->data - 1, new_size * sizeof(elem_t));
+    void* new_mem_block = (void*) realloc((stack)->data - 1, new_size * sizeof(elem_t));
 
-    stack->data = new_mem_block + 1;
+    MemoryOk(stack, new_mem_block);
 
-    wmemset((wchar_t*)((stack)->data + prev_size), POISON, new_size - prev_size + 1);
+    stack->data = (elem_t*) new_mem_block + 1;
+
+    wmemset((wchar_t*)(stack->data + prev_size), POISON, abs(new_size - prev_size) + 1);
 
     stack->max_size += resize_val;
 
-    stack->data[stack->max_size] = (elem_t) CANARY_ALIVE;
+    SetCanaries(stack->data, stack->max_size);
 
-    //printf("HASH AFTER RESIZE %d\n", GetStackHash(stack));
     RewriteStackHash(stack);
 
     STACK_ASSERT(stack);
 }
 
-/*! Calculates hash of stack structure
+/*! Calculates custom hash of stack structure
     @param stack pointer to stack structure
     @return hash calculated hash
 */
@@ -214,4 +214,26 @@ unsigned long GetStackHash(stack_t* stack){
 */
 void RewriteStackHash(stack_t* stack){
     stack->hash = GetStackHash(stack);
+}
+
+/*! Checks if memory was allocated successfully
+    @param stack pointer to stack structure
+    @param block pointer to allocated memory
+*/
+void MemoryOk(stack_t* stack, void* block){
+    if (block == nullptr) {
+        StackError error = MEMORY_ALLOCATION_ERROR;
+        DumpStack(stack, error, __LINE__);
+        exit(error);
+    }
+
+}
+
+/*! Sets front and back canaries to data array
+    @param data array of elem_t
+    @param size size of array
+*/
+void SetCanaries(elem_t* data, size_t size){
+    data[-1] = (elem_t) CANARY_ALIVE;
+    data[size] = (elem_t) CANARY_ALIVE;
 }

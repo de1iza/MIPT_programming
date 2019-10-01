@@ -36,11 +36,11 @@ const int RESIZE_VAL = 20;
 #define STACK_ASSERT(stack) ;
 #endif
 
-#define PRINT_CANARY(stack, canary_num){                    \
-    if (canary_num == 1)                                    \
-        printf("0x%x\n", (stack)->data[-1]);                \
-    else                                                    \
-        printf("0x%x\n", (stack)->data[stack->max_size]);   \
+#define PRINT_CANARY(stack, canary_num){                                                  \
+    if (canary_num == 1)                                                                  \
+        printf("0x%x (Expected 0x%x)\n", (stack)->data[-1], CANARY_ALIVE);                \
+    else                                                                                  \
+        printf("0x%x (Expected 0x%x)\n", (stack)->data[stack->max_size], CANARY_ALIVE);   \
 }
 
 #define PRINT_STACK_ELEMS(stack){                                                   \
@@ -56,7 +56,7 @@ const int RESIZE_VAL = 20;
 #define PRINT_INTS(stack) {                                                     \
     PRINT_CANARY(stack, 1);                                                     \
     for (int i = 0; i < (stack)->max_size; ++i){                                \
-        printf("! %s data[%02d]: %s %d ", CYAN, i, RESET, (stack)->data[i]);      \
+        printf("! %s data[%02d]: %s %d ", CYAN, i, RESET, (stack)->data[i]);    \
         ShowElementStatus(stack->data[i]);                                      \
         printf("\n");                                                           \
     }                                                                           \
@@ -102,6 +102,7 @@ enum StackError{
     DATA_CANARY_DEAD,
     WRONG_HASH,
     UNDERFLOW,
+    MEMORY_ALLOCATION_ERROR,
 };
 
 const char* error_strings[] = {"OK",
@@ -111,7 +112,8 @@ const char* error_strings[] = {"OK",
                                "STRUCTURE_CANARY_DEAD",
                                "DATA_CANARY_DEAD",
                                "WRONG_HASH",
-                               "UNDERFLOW"};
+                               "UNDERFLOW",
+                               "MEMORY_ALLOCATION_ERROR"};
 
 
 void StackInit(stack_t* stack, size_t max_size);
@@ -125,3 +127,5 @@ void ShowElementStatus(elem_t value);
 void StackResize(stack_t* stack, int resize_val);
 unsigned long GetStackHash(stack_t* stack);
 void RewriteStackHash(stack_t* stack);
+void MemoryOk(stack_t* stack, void* block);
+void SetCanaries(elem_t* data, size_t size);
