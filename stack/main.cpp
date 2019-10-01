@@ -5,122 +5,7 @@
 #include <typeinfo>
 #include <wchar.h>
 
-#define CANARY_ALIVE 0xAB
-#define POISON 13377331
-#define DEBUG 1
-
-const size_t RESIZE_VAL = 20;
-
-#ifdef DEBUG
-#define STACK_ASSERT(stack){                        \
-        StackError error = CheckStack(stack);       \
-        if (error) {                                \
-            DumpStack(stack, error);                \
-            exit(error);                            \
-        }                                           \
-    }
-#else
-#define STACK_ASSERT(stack) ;
-#endif
-
-#define PRINT_CANARY(stack, canary_num){                    \
-    if (canary_num == 1)                                    \
-        printf("0x%x\n", (stack)->data[-1]);                \
-    else                                                    \
-        printf("0x%x\n", (stack)->data[stack->max_size]);   \
-}
-
-#define PRINT_STACK_ELEMS(stack){                                                   \
-    if (typeid((stack)->data[0]) == typeid(int)) { PRINT_INTS(stack); }             \
-    else if (typeid((stack)->data[0]) == typeid(float)) { PRINT_FLOATS(stack); }    \
-    else if (typeid((stack)->data[0]) == typeid(char)) { PRINT_CHARS(stack); }      \
-    else {                                                                          \
-        fprintf(stderr, "Unknown data type");                                       \
-        exit(-1);                                                                   \
-    }                                                                               \
-}
-
-#define PRINT_INTS(stack) {                                                     \
-    PRINT_CANARY(stack, 1);                                                     \
-    for (int i = 0; i < (stack)->max_size; ++i){                                \
-        printf("! %s data[%02d]: %s %d ", CYAN, i, RESET, (stack)->data[i]);      \
-        ShowElementStatus(stack->data[i]);                                      \
-        printf("\n");                                                           \
-    }                                                                           \
-    PRINT_CANARY(stack, 2);                                                     \
-}
-
-#define PRINT_FLOATS(stack) {                                                   \
-    PRINT_CANARY(stack, 1);                                                     \
-    for (int i = 0; i < (stack)->size; ++i){                                    \
-        printf("! %s data[%d]: %s %g\n", CYAN, i, RESET, (stack)->data[i]);     \
-        ShowElementStatus(stack->data[i]);                                      \
-        printf("\n");                                                           \
-    }                                                                           \
-    PRINT_CANARY(stack, 2);                                                     \
-}
-
-#define PRINT_CHARS(stack) {                                                    \
-    PRINT_CANARY(stack, 1);                                                     \
-    for (int i = 0; i < (stack)->size; ++i)  {                                  \
-        printf("! %s data[%d]: %s %c\n", CYAN, i, RESET, (stack)->data[i]);     \
-        ShowElementStatus(stack->data[i]);                                      \
-        printf("\n");                                                           \
-    }                                                                           \
-    PRINT_CANARY(stack, 2);                                                     \
-}
-
-#define STACK_INIT(stack, max_size){    \
-    stack.name = #stack;                \
-    StackInit(&stack, max_size);        \
-}
-
-#define RED "\x1B[31m"
-#define CYAN "\x1B[36m"
-#define RESET "\x1B[0m"
-
-typedef int elem_t;
-
-struct stack_t{
-    int canary1;
-    int max_size;
-    int size;
-    const char* name;
-    elem_t* data;
-    unsigned long hash;
-    int canary2;
-
-};
-
-enum StackError{
-    OK,
-    NULL_STACK_PTR,
-    NULL_DATA_PTR,
-    INVALID_STACK_SIZE,
-    STRUCTURE_CANARY_DEAD,
-    DATA_CANARY_DEAD,
-    WRONG_HASH,
-};
-
-const char* error_strings[] = {"OK",
-                               "NULL_STACK_PTR",
-                               "NULL_DATA_PTR",
-                               "INVALID_STACK_SIZE",
-                               "STRUCTURE_CANARY_DEAD",
-                               "DATA_CANARY_DEAD",
-                               "WRONG_HASH"};
-
-void StackInit(stack_t* stack, size_t max_size);
-void StackDelete(stack_t* stack);
-void StackPush(stack_t* stack, elem_t value);
-elem_t StackPop(stack_t* stack);
-void DumpStack(stack_t* stack, StackError error);
-bool IsEmpty(stack_t* stack);
-StackError CheckStack(stack_t* stack);
-void ShowElementStatus(elem_t value);
-void StackResize(stack_t* stack);
-unsigned long GetStackHash(stack_t* stack);
-void RewriteStackHash(stack_t* stack);
+#include "stack.h"
 
 
 int main() {
@@ -135,14 +20,17 @@ int main() {
     StackPush(&stk, 1);
     StackPush(&stk, 1);
     StackPush(&stk, 1);
-    /*StackPush(&stk, 1);
+    StackPush(&stk, 1);
     StackPush(&stk, 1);
     StackPush(&stk, 1);
     StackPush(&stk, 1);
     for (int i = 0; i < 65; ++i){
-        StackPush(&stk, 6);}*/
+        StackPush(&stk, 6);}
 
     StackPop(&stk);
+
+    for (int i = 0; i < 25; ++i){
+        StackPop(&stk);}
 
     StackDelete(&stk);
 
@@ -195,7 +83,7 @@ void StackPush(stack_t* stack, elem_t value){
     STACK_ASSERT(stack);
 
     if (stack->size == stack->max_size){
-        StackResize(stack);
+        StackResize(stack, RESIZE_VAL);
     }
     stack->data[stack->size++] = value;
 
@@ -217,6 +105,12 @@ elem_t StackPop(stack_t* stack){
 
     RewriteStackHash(stack);
 
+    /*if (stack->max_size - stack->size >= RESIZE_VAL){
+        printf("TRYING TO RESIZE BACK\n");
+        StackResize(stack, -RESIZE_VAL);
+    }*/
+
+
     STACK_ASSERT(stack);
 
     return value;
@@ -226,8 +120,8 @@ elem_t StackPop(stack_t* stack){
     @param stack pointer to stack structure
     @param error error code
 */
-void DumpStack(stack_t* stack, StackError error){
-    printf("! %s ASSERTION FAILED %s in file %s, line %d\n", RED, RESET, __FILE__, __LINE__ );
+void DumpStack(stack_t* stack, StackError error, int line){
+    printf("! %s ASSERTION FAILED %s in file %s, line %d\n", RED, RESET, __FILE__, line);
     printf("! %s %s %s\n", RED, error_strings[error], RESET);
     printf("!  %s \"%s\" [%p] \n", typeid(stack).name(), stack->name, stack);
     printf("! %s max_size: %-4s %d\n", CYAN, RESET, stack->max_size);
@@ -278,11 +172,11 @@ void ShowElementStatus(elem_t value){
 /*! Resizes stack data array
     @param stack pointer to stack structure
 */
-void StackResize(stack_t* stack){
+void StackResize(stack_t* stack, int resize_val){
     STACK_ASSERT(stack);
 
     int prev_size = stack->max_size;
-    int new_size = prev_size + RESIZE_VAL + 2;
+    int new_size = prev_size + resize_val + 2;
 
     void* new_mem_block = realloc((void*) (stack->data - 1), new_size * sizeof(elem_t));
 
@@ -290,9 +184,12 @@ void StackResize(stack_t* stack){
 
     wmemset((wchar_t*)((stack)->data + prev_size), POISON, new_size - prev_size + 1);
 
-    stack->max_size += RESIZE_VAL;
+    stack->max_size += resize_val;
 
     stack->data[stack->max_size] = (elem_t) CANARY_ALIVE;
+
+    //printf("HASH AFTER RESIZE %d\n", GetStackHash(stack));
+    RewriteStackHash(stack);
 
     STACK_ASSERT(stack);
 }
