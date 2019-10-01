@@ -86,8 +86,8 @@ struct stack_t{
     int max_size;
     int size;
     const char* name;
-    unsigned int hash;
     elem_t* data;
+    unsigned long hash;
     int canary2;
 
 };
@@ -99,6 +99,7 @@ enum StackError{
     INVALID_STACK_SIZE,
     STRUCTURE_CANARY_DEAD,
     DATA_CANARY_DEAD,
+    WRONG_HASH,
 };
 
 const char* error_strings[] = {"OK",
@@ -106,7 +107,8 @@ const char* error_strings[] = {"OK",
                                "NULL_DATA_PTR",
                                "INVALID_STACK_SIZE",
                                "STRUCTURE_CANARY_DEAD",
-                               "DATA_CANARY_DEAD"};
+                               "DATA_CANARY_DEAD",
+                               "WRONG_HASH"};
 
 void StackInit(stack_t* stack, size_t max_size);
 void StackDelete(stack_t* stack);
@@ -117,6 +119,8 @@ bool IsEmpty(stack_t* stack);
 StackError CheckStack(stack_t* stack);
 void ShowElementStatus(elem_t value);
 void StackResize(stack_t* stack);
+unsigned long GetStackHash(stack_t* stack);
+void RewriteStackHash(stack_t* stack);
 
 
 int main() {
@@ -158,6 +162,8 @@ void StackInit(stack_t* stack, size_t max_size){
 
     stack->canary2 = CANARY_ALIVE;
 
+    stack->hash = GetStackHash(stack);
+
     STACK_ASSERT(stack);
 
 
@@ -188,6 +194,8 @@ void StackPush(stack_t* stack, elem_t value){
     }
     stack->data[stack->size++] = value;
 
+    RewriteStackHash(stack);
+
     STACK_ASSERT(stack);
 
 }
@@ -202,6 +210,8 @@ elem_t StackPop(stack_t* stack){
     elem_t value = stack->data[--stack->size];
     stack->data[stack->size] = POISON;
 
+    RewriteStackHash(stack);
+
     STACK_ASSERT(stack);
 
     return value;
@@ -215,11 +225,12 @@ void DumpStack(stack_t* stack, StackError error){
     printf("! %s ASSERTION FAILED %s in file %s, line %d\n", RED, RESET, __FILE__, __LINE__ );
     printf("! %s %s %s\n", RED, error_strings[error], RESET);
     printf("!  %s \"%s\" [%p] \n", typeid(stack).name(), stack->name, stack);
-    printf("! %s max_size: %s %d\n", CYAN, RESET, stack->max_size);
-    printf("! %s size: %s %d\n", CYAN, RESET, stack->size);
-    printf("! %s data %s [%p]\n", CYAN, RESET, stack->data);
-    printf("! %s canary1: %s 0x%x (Expected 0x%x)\n", CYAN, RESET, stack->canary1, CANARY_ALIVE);
-    printf("! %s canary2: %s 0x%x (Expected 0x%x)\n", CYAN, RESET, stack->canary2, CANARY_ALIVE);
+    printf("! %s max_size: %-4s %d\n", CYAN, RESET, stack->max_size);
+    printf("! %s size: %-8s %d\n", CYAN, RESET, stack->size);
+    printf("! %s data %-9s [%p]\n", CYAN, RESET, stack->data);
+    printf("! %s canary1: %-5s 0x%x (Expected 0x%x)\n", CYAN, RESET, stack->canary1, CANARY_ALIVE);
+    printf("! %s canary2: %-5s 0x%x (Expected 0x%x)\n", CYAN, RESET, stack->canary2, CANARY_ALIVE);
+    printf("! %s hash: %-8s %lu (Expected %lu)\n", CYAN, RESET, stack->hash, GetStackHash(stack));
     PRINT_STACK_ELEMS(stack);
 }
 
@@ -238,6 +249,8 @@ StackError CheckStack(stack_t* stack){
         return STRUCTURE_CANARY_DEAD;
     if (stack->data[-1] != CANARY_ALIVE || stack->data[stack->max_size] != CANARY_ALIVE)
         return DATA_CANARY_DEAD;
+    if (stack->hash != GetStackHash(stack))
+        return WRONG_HASH;
     return OK;
 }
 
@@ -277,5 +290,24 @@ void StackResize(stack_t* stack){
     stack->data[stack->max_size] = (elem_t) CANARY_ALIVE;
 
     STACK_ASSERT(stack);
+}
 
+/*! Calculates hash of stack structure
+    @param stack pointer to stack structure
+    @return hash calculated hash
+*/
+unsigned long GetStackHash(stack_t* stack){
+    unsigned int hash = 0;
+    for (int i = 0; i < stack->max_size; ++i){
+        hash += stack->data[i] * (stack->data[i] << 3) + 4622041 ^ stack->data[i];
+    }
+    hash += stack->size * (stack->max_size >> 2) + 142091 * (long)stack->data;
+    return hash;
+}
+
+/*! Writes new hash to stack structure
+    @param stack pointer to stack structure
+*/
+void RewriteStackHash(stack_t* stack){
+    stack->hash = GetStackHash(stack);
 }
