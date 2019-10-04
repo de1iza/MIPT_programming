@@ -2,39 +2,22 @@
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
-#include <typeinfo>
 #include <wchar.h>
 
 #include "stack.h"
+#include "tests.h"
 
-
-#define TEST1_FIX 1
 
 int main() {
     const int DEFAULT_SIZE = 10;
-    stack_t stk = {};
 
-    STACK_INIT(stk, DEFAULT_SIZE);
-
-    StackPush(&stk, 34);
-    StackPush(&stk, 32);
-    StackPush(&stk, 1);
-    StackPush(&stk, 1);
-    StackPush(&stk, 1);
-
-    //StackPop(&stk);
-
-    for (int i = 0; i < 25; ++i){
-        StackPop(&stk);}
+    //TestUnderflow();
+    //TestOverflow();
+    //TestBrokenArray();
+    //TestBrokenData();
+    TestBrokenCanary();
 
 
-    //stk.data[233] = 5;
-
-    StackPush(&stk, 1);
-
-    STACK_ASSERT(&stk);
-
-    StackDelete(&stk);
     return 0;
 }
 
@@ -236,4 +219,60 @@ void MemoryOk(stack_t* stack, void* block){
 void SetCanaries(elem_t* data, size_t size){
     data[-1] = (elem_t) CANARY_ALIVE;
     data[size] = (elem_t) CANARY_ALIVE;
+}
+
+
+
+int TestUnderflow(){
+    stack_t stk = {};
+    STACK_INIT(stk, 10);
+
+    StackPop(&stk);
+    StackPop(&stk);
+
+    StackDelete(&stk);
+    return 0;
+}
+
+int TestOverflow(){
+    stack_t stk = {};
+    STACK_INIT(stk, 10);
+    for (int i = 0; i < 20; i++)
+        StackPush(&stk, 5);
+
+    StackDelete(&stk);
+
+    return 0;
+}
+
+int TestBrokenArray(){
+    stack_t stk = {};
+    STACK_INIT(stk, 10);
+    for (int i = 0; i < 5; i++)
+        StackPush(&stk, 33);
+    stk.data[2] = 45;
+
+    StackDelete(&stk);
+}
+
+int TestBrokenData(){
+    stack_t stk = {};
+    STACK_INIT(stk, 10);
+
+    for (int i = 0; i < 5; i++)
+        StackPush(&stk, 33);
+    stk.size = 4;
+
+    StackDelete(&stk);
+}
+
+int TestBrokenCanary(){
+    stack_t stk = {};
+    STACK_INIT(stk, 10);
+
+    for (int i = 0; i < 5; i++)
+        StackPush(&stk, 33);
+    stk.canary1 = 111;
+
+    StackDelete(&stk);
 }
