@@ -14,15 +14,13 @@ int main() {
 
    // Test();
 
-   //TestUnderflow();
+   TestUnderflow();
     //TestOverflow();
     //TestBrokenArray();
     //TestBrokenData();
     //TestBrokenCanary();
 
-    stack_t stk = {};
-    STACK_INIT(stk, DEFAULT_SIZE);
-    
+
 
     return 0;
 }
@@ -88,14 +86,18 @@ void StackPush(stack_t* stack, elem_t value){
 StackError StackPop(stack_t* stack, elem_t* value){
     STACK_ASSERT(stack);
 
+
     if (!IsEmpty(stack)) {
         elem_t pop_val = stack->data[--stack->size];
         stack->data[stack->size] = POISON;
 
         RewriteStackHash(stack);
     } else {
-        printf("Stack is empty. Unable to pop.\n");
-        return UNDERFLOW;
+        #ifndef DEBUG
+            printf("Stack is empty. Unable to pop.\n");
+            return UNDERFLOW;
+        #endif
+        stack->size = -1;
     }
 
     STACK_ASSERT(stack);
@@ -239,7 +241,7 @@ int TestUnderflow(){
 
     StackError error = StackPop(&stk, &val);
 
-    printf("Pop result: %s\n", error_strings[error]);
+    //printf("Pop result: %s\n", error_strings[error]);
 
 
     StackDelete(&stk);
