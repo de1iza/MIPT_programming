@@ -127,6 +127,7 @@ bool IsEmpty(stack_t* stack);
 StackError CheckStack(stack_t* stack);
 void ShowElementStatus(elem_t value);
 void StackResize(stack_t* stack, int resize_val);
+unsigned long GetHash(void* first_byte, void* last_byte);
 unsigned long GetStackHash(stack_t* stack);
 void RewriteStackHash(stack_t* stack);
 void MemoryOk(stack_t* stack, void* block);

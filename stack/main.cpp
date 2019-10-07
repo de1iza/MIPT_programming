@@ -14,7 +14,7 @@ int main() {
 
    // Test();
 
-   TestUnderflow();
+   //TestUnderflow();
     //TestOverflow();
     //TestBrokenArray();
     //TestBrokenData();
@@ -42,8 +42,8 @@ void StackInit(stack_t* stack, size_t max_size){
 
     SetDataCanaries(stack->data, stack->max_size);
 
-
     stack->hash = GetStackHash(stack);
+
 
     STACK_ASSERT(stack);
 
@@ -189,24 +189,32 @@ void StackResize(stack_t* stack, int resize_val){
     STACK_ASSERT(stack);
 }
 
-/*! Calculates custom hash of stack structure
-    @param stack pointer to stack structure
+/*! Calculates custom hash in range [first_byte, last_byte)
+    @param first_byte byte to start calculating hash from
+    @param last_byte byte to finish calculating hash with
     @return hash calculated hash
 */
-unsigned long GetStackHash(stack_t* stack){
+unsigned long GetHash(void* first_byte, void* last_byte){
     unsigned int hash = 0;
-    for (int i = 0; i < stack->max_size; ++i){
-        hash += stack->data[i] * (stack->data[i] << 3) + 4622041 ^ stack->data[i];
+    for (char* byte = (char*) first_byte; byte < (char*) last_byte; byte++){
+        hash += (unsigned int) *byte * ((unsigned int) *byte << 3) + 4622041 ^ (unsigned int) *byte;
     }
-    hash += stack->size * (stack->max_size >> 2) + 142091 * (long)stack->data;
+
     return hash;
+}
+
+
+unsigned long GetStackHash(stack_t* stack){
+    return GetHash(&stack->canary1, &stack->hash) +
+    GetHash(&stack->canary2, &stack->canary2 + 1) +
+    GetHash(&stack->data[-1], &stack->data[stack->max_size] + 1);
 }
 
 /*! Writes new hash to stack structure
     @param stack pointer to stack structure
 */
 void RewriteStackHash(stack_t* stack){
-    STACK_ASSERT(stack);
+    //STACK_ASSERT(stack);
     stack->hash = GetStackHash(stack);
 }
 
