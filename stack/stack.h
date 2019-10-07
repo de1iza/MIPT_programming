@@ -5,7 +5,7 @@
 #include <typeinfo>
 #include <wchar.h>
 
-#define DEBUG 1
+//#define DEBUG 1
 
 typedef int elem_t;
 
@@ -119,7 +119,7 @@ const char* error_strings[] = {"OK",
 void StackInit(stack_t* stack, size_t max_size);
 void StackDelete(stack_t* stack);
 void StackPush(stack_t* stack, elem_t value);
-elem_t StackPop(stack_t* stack);
+StackError StackPop(stack_t* stack, elem_t* value);
 void DumpStack(stack_t* stack, StackError error, int line);
 bool IsEmpty(stack_t* stack);
 StackError CheckStack(stack_t* stack);

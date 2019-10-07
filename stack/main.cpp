@@ -14,12 +14,15 @@ int main() {
 
    // Test();
 
-   TestUnderflow();
+   //TestUnderflow();
     //TestOverflow();
     //TestBrokenArray();
     //TestBrokenData();
     //TestBrokenCanary();
 
+    stack_t stk = {};
+    STACK_INIT(stk, DEFAULT_SIZE);
+    
 
     return 0;
 }
@@ -82,17 +85,22 @@ void StackPush(stack_t* stack, elem_t value){
     @param stack pointer to stack structure
     @return value top element
 */
-elem_t StackPop(stack_t* stack){
+StackError StackPop(stack_t* stack, elem_t* value){
     STACK_ASSERT(stack);
 
-    elem_t value = stack->data[--stack->size];
-    stack->data[stack->size] = POISON;
-    
-    RewriteStackHash(stack);
+    if (!IsEmpty(stack)) {
+        elem_t pop_val = stack->data[--stack->size];
+        stack->data[stack->size] = POISON;
+
+        RewriteStackHash(stack);
+    } else {
+        printf("Stack is empty. Unable to pop.\n");
+        return UNDERFLOW;
+    }
 
     STACK_ASSERT(stack);
 
-    return value;
+    return OK;
 }
 
 /*! Prints full info about error and all stack structure fields
@@ -225,8 +233,14 @@ int TestUnderflow(){
     stack_t stk = {};
     STACK_INIT(stk, 10);
 
-    StackPop(&stk);
-    //StackPop(&stk);
+    elem_t val = 0;
+
+    //StackPush(&stk, 7);
+
+    StackError error = StackPop(&stk, &val);
+
+    printf("Pop result: %s\n", error_strings[error]);
+
 
     StackDelete(&stk);
     return 0;
@@ -288,7 +302,8 @@ int Test(){
     stk.max_size = 100000;
 
     for (int i =0; i<50; i++) {
-        printf("%d", StackPop(&stk));
+        elem_t value = 0;
+        StackPop(&stk, &value);
     }
 
     StackDelete(&stk);
