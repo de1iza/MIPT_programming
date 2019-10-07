@@ -25,15 +25,15 @@ const int POISON  = 13377331;
 const int RESIZE_VAL = 20;
 
 #ifdef DEBUG
-#define STACK_ASSERT(stack){                        \
-        StackError error = CheckStack(stack);       \
-        if (error) {                                \
-            DumpStack(stack, error, __LINE__);      \
-            exit(error);                            \
-        }                                           \
-    }
+    #define STACK_ASSERT(stack){                        \
+            StackError error = CheckStack(stack);       \
+            if (error) {                                \
+                DumpStack(stack, error, __LINE__);      \
+                exit(error);                            \
+            }                                           \
+        }
 #else
-#define STACK_ASSERT(stack) ;
+    #define STACK_ASSERT(stack) ;
 #endif
 
 #define PRINT_CANARY(stack, canary_num){                                                  \
@@ -75,7 +75,7 @@ const int RESIZE_VAL = 20;
 
 #define PRINT_CHARS(stack) {                                                    \
     PRINT_CANARY(stack, 1);                                                     \
-    for (int i = 0; i < (stack)->size; ++i)  {                                  \
+    for (int i = 0; i < (stack)->size; ++i){                                    \
         printf("! %s data[%d]: %s %c\n", CYAN, i, RESET, (stack)->data[i]);     \
         ShowElementStatus(stack->data[i]);                                      \
         printf("\n");                                                           \

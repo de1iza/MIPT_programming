@@ -7,21 +7,23 @@
 #include "stack.h"
 #include "tests.h"
 
+int Test();
 
 int main() {
     const int DEFAULT_SIZE = 10;
 
-    //TestUnderflow();
+   // Test();
+
+   TestUnderflow();
     //TestOverflow();
     //TestBrokenArray();
     //TestBrokenData();
-    TestBrokenCanary();
+    //TestBrokenCanary();
 
 
     return 0;
 }
-
-/*! Function to initialize stack (constructor)
+/* Function to initialize stack (constructor)
     @param stack pointer to stack structure
     @param max_size size of a full stack
 */
@@ -85,13 +87,8 @@ elem_t StackPop(stack_t* stack){
 
     elem_t value = stack->data[--stack->size];
     stack->data[stack->size] = POISON;
-
+    
     RewriteStackHash(stack);
-
-    /*if (stack->max_size - stack->size >= RESIZE_VAL){
-        printf("TRYING TO RESIZE BACK\n");
-        StackResize(stack, -RESIZE_VAL);
-    }*/
 
     STACK_ASSERT(stack);
 
@@ -196,6 +193,7 @@ unsigned long GetStackHash(stack_t* stack){
     @param stack pointer to stack structure
 */
 void RewriteStackHash(stack_t* stack){
+    STACK_ASSERT(stack);
     stack->hash = GetStackHash(stack);
 }
 
@@ -228,7 +226,7 @@ int TestUnderflow(){
     STACK_INIT(stk, 10);
 
     StackPop(&stk);
-    StackPop(&stk);
+    //StackPop(&stk);
 
     StackDelete(&stk);
     return 0;
@@ -275,4 +273,25 @@ int TestBrokenCanary(){
     stk.canary1 = 111;
 
     StackDelete(&stk);
+}
+
+
+
+int Test(){
+    stack_t stk = {};
+    STACK_INIT(stk, 10);
+
+    for (int i =0; i<100; i++) {
+        StackPush(&stk, 55);
+    }
+
+    stk.max_size = 100000;
+
+    for (int i =0; i<50; i++) {
+        printf("%d", StackPop(&stk));
+    }
+
+    StackDelete(&stk);
+
+    return 0;
 }
