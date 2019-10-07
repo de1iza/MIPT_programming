@@ -24,6 +24,7 @@ int main() {
 
     return 0;
 }
+
 /* Function to initialize stack (constructor)
     @param stack pointer to stack structure
     @param max_size size of a full stack
@@ -31,15 +32,16 @@ int main() {
 void StackInit(stack_t* stack, size_t max_size){
     assert(max_size);
 
-    stack->canary1 = CANARY_ALIVE;
+    SetCanary((char*) &stack->canary1, sizeof(elem_t));
+    SetCanary((char*) &stack->canary2, sizeof(elem_t));
+
     stack->max_size = max_size;
     stack->size = 0;
     stack->data = (elem_t*) calloc(max_size + 2, sizeof(elem_t)) + 1;
     wmemset((wchar_t*) ((stack)->data - 1), POISON, max_size + 2);
 
-    SetCanaries(stack->data, stack->max_size);
+    SetDataCanaries(stack->data, stack->max_size);
 
-    stack->canary2 = CANARY_ALIVE;
 
     stack->hash = GetStackHash(stack);
 
@@ -86,9 +88,8 @@ void StackPush(stack_t* stack, elem_t value){
 StackError StackPop(stack_t* stack, elem_t* value){
     STACK_ASSERT(stack);
 
-
     if (!IsEmpty(stack)) {
-        elem_t pop_val = stack->data[--stack->size];
+        *value = stack->data[--stack->size];
         stack->data[stack->size] = POISON;
 
         RewriteStackHash(stack);
@@ -116,8 +117,10 @@ void DumpStack(stack_t* stack, StackError error, int line){
     printf("! %s max_size: %-4s %d\n", CYAN, RESET, stack->max_size);
     printf("! %s size: %-8s %d\n", CYAN, RESET, stack->size);
     printf("! %s data %-9s [%p]\n", CYAN, RESET, stack->data);
-    printf("! %s canary1: %-5s 0x%x (Expected 0x%x)\n", CYAN, RESET, stack->canary1, CANARY_ALIVE);
-    printf("! %s canary2: %-5s 0x%x (Expected 0x%x)\n", CYAN, RESET, stack->canary2, CANARY_ALIVE);
+    int valid_canary = 0;
+    SetCanary((char*) &valid_canary, sizeof(int));
+    printf("! %s canary1: %-5s 0x%x (Expected 0x%x)\n", CYAN, RESET, stack->canary1, valid_canary);
+    printf("! %s canary2: %-5s 0x%x (Expected 0x%x)\n", CYAN, RESET, stack->canary2, valid_canary);
     printf("! %s hash: %-8s %lu (Expected %lu)\n", CYAN, RESET, stack->hash, GetStackHash(stack));
     PRINT_STACK_ELEMS(stack);
 }
@@ -135,9 +138,9 @@ StackError CheckStack(stack_t* stack){
         return UNDERFLOW;
     if  (stack->size > stack->max_size || stack->size < 0)
         return INVALID_STACK_SIZE;
-    if (stack->canary1 != CANARY_ALIVE || stack->canary2 != CANARY_ALIVE)
+    if (!CanaryIsValid((char*) &stack->canary1, sizeof(int)) || !CanaryIsValid((char*) &stack->canary2, sizeof(int)) )
         return STRUCTURE_CANARY_DEAD;
-    if (stack->data[-1] != CANARY_ALIVE || stack->data[stack->max_size] != CANARY_ALIVE)
+    if (!CanaryIsValid((char*) &(stack->data[-1]), sizeof(elem_t))  || !CanaryIsValid((char*) &(stack->data[stack->max_size]), sizeof(elem_t)))
         return DATA_CANARY_DEAD;
     if (stack->hash != GetStackHash(stack))
         return WRONG_HASH;
@@ -179,7 +182,7 @@ void StackResize(stack_t* stack, int resize_val){
 
     stack->max_size += resize_val;
 
-    SetCanaries(stack->data, stack->max_size);
+    SetDataCanaries(stack->data, stack->max_size);
 
     RewriteStackHash(stack);
 
@@ -224,12 +227,29 @@ void MemoryOk(stack_t* stack, void* block){
     @param data array of elem_t
     @param size size of array
 */
-void SetCanaries(elem_t* data, size_t size){
-    data[-1] = (elem_t) CANARY_ALIVE;
-    data[size] = (elem_t) CANARY_ALIVE;
+void SetDataCanaries(elem_t* data, size_t size){
+    SetCanary((char*) (data - 1), sizeof(elem_t));
+    SetCanary((char*) (data + size), sizeof(elem_t));
 }
 
 
+/*! Fills each byte of canary with default canary byte to fit in elem_t array
+    @param data pointer to canary
+    @param size size of elem_t in bytes
+*/
+void SetCanary(char* canary_ptr, size_t canary_size){
+    for (char* byte = canary_ptr, cnt = 0; cnt < canary_size; cnt++, byte++){
+        *byte = CANARY_BYTE;
+    }
+}
+
+bool CanaryIsValid(char* canary_ptr, size_t canary_size){
+    for (char* byte = canary_ptr, cnt = 0; cnt < canary_size; cnt++, byte++){
+        if (*byte != CANARY_BYTE)
+            return false;
+    }
+    return true;
+}
 
 int TestUnderflow(){
     stack_t stk = {};
@@ -241,6 +261,7 @@ int TestUnderflow(){
 
     StackError error = StackPop(&stk, &val);
 
+    if (error) exit(error);
     //printf("Pop result: %s\n", error_strings[error]);
 
 

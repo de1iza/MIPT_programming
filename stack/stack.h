@@ -5,7 +5,7 @@
 #include <typeinfo>
 #include <wchar.h>
 
-//#define DEBUG 1
+#define DEBUG 1
 
 typedef int elem_t;
 
@@ -20,7 +20,7 @@ struct stack_t{
 
 };
 
-const char CANARY_ALIVE = 0xAB;
+const char CANARY_BYTE = 0xAB;
 const int POISON  = 13377331;
 const int RESIZE_VAL = 20;
 
@@ -37,10 +37,12 @@ const int RESIZE_VAL = 20;
 #endif
 
 #define PRINT_CANARY(stack, canary_num){                                                  \
+    int valid_canary = 0;                                                                 \
+    SetCanary((char*) &valid_canary, sizeof(elem_t));                                     \
     if (canary_num == 1)                                                                  \
-        printf("0x%x (Expected 0x%x)\n", (stack)->data[-1], CANARY_ALIVE);                \
+        printf("0x%x (Expected 0x%x)\n", (stack)->data[-1], valid_canary);                \
     else                                                                                  \
-        printf("0x%x (Expected 0x%x)\n", (stack)->data[stack->max_size], CANARY_ALIVE);   \
+        printf("0x%x (Expected 0x%x)\n", (stack)->data[stack->max_size], valid_canary);   \
 }
 
 #define PRINT_STACK_ELEMS(stack){                                                   \
@@ -128,4 +130,6 @@ void StackResize(stack_t* stack, int resize_val);
 unsigned long GetStackHash(stack_t* stack);
 void RewriteStackHash(stack_t* stack);
 void MemoryOk(stack_t* stack, void* block);
-void SetCanaries(elem_t* data, size_t size);
+void SetDataCanaries(elem_t* data, size_t size);
+void SetCanary(char* canary_ptr, size_t canary_size);
+bool CanaryIsValid(char* canary_ptr, size_t canary_size);
