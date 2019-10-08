@@ -32,8 +32,8 @@ int main() {
 void StackInit(stack_t* stack, size_t max_size){
     assert(max_size);
 
-    SetCanary((char*) &stack->canary1, sizeof(elem_t));
-    SetCanary((char*) &stack->canary2, sizeof(elem_t));
+    SetCanary(&stack->canary1, sizeof(elem_t));
+    SetCanary(&stack->canary2, sizeof(elem_t));
 
     stack->max_size = max_size;
     stack->size = 0;
@@ -118,7 +118,7 @@ void DumpStack(stack_t* stack, StackError error, int line){
     printf("! %s size: %-8s %d\n", CYAN, RESET, stack->size);
     printf("! %s data %-9s [%p]\n", CYAN, RESET, stack->data);
     int valid_canary = 0;
-    SetCanary((char*) &valid_canary, sizeof(int));
+    SetCanary(&valid_canary, sizeof(int));
     printf("! %s canary1: %-5s 0x%x (Expected 0x%x)\n", CYAN, RESET, stack->canary1, valid_canary);
     printf("! %s canary2: %-5s 0x%x (Expected 0x%x)\n", CYAN, RESET, stack->canary2, valid_canary);
     printf("! %s hash: %-8s %lu (Expected %lu)\n", CYAN, RESET, stack->hash, GetStackHash(stack));
@@ -138,9 +138,9 @@ StackError CheckStack(stack_t* stack){
         return UNDERFLOW;
     if  (stack->size > stack->max_size || stack->size < 0)
         return INVALID_STACK_SIZE;
-    if (!CanaryIsValid((char*) &stack->canary1, sizeof(int)) || !CanaryIsValid((char*) &stack->canary2, sizeof(int)) )
+    if (!CanaryIsValid(&stack->canary1, sizeof(int)) || !CanaryIsValid(&stack->canary2, sizeof(int)) )
         return STRUCTURE_CANARY_DEAD;
-    if (!CanaryIsValid((char*) &(stack->data[-1]), sizeof(elem_t))  || !CanaryIsValid((char*) &(stack->data[stack->max_size]), sizeof(elem_t)))
+    if (!CanaryIsValid(&(stack->data[-1]), sizeof(elem_t))  || !CanaryIsValid(&(stack->data[stack->max_size]), sizeof(elem_t)))
         return DATA_CANARY_DEAD;
     if (stack->hash != GetStackHash(stack))
         return WRONG_HASH;
@@ -236,8 +236,8 @@ void MemoryOk(stack_t* stack, void* block){
     @param size size of array
 */
 void SetDataCanaries(elem_t* data, size_t size){
-    SetCanary((char*) (data - 1), sizeof(elem_t));
-    SetCanary((char*) (data + size), sizeof(elem_t));
+    SetCanary(data - 1, sizeof(elem_t));
+    SetCanary(data + size, sizeof(elem_t));
 }
 
 
@@ -245,14 +245,14 @@ void SetDataCanaries(elem_t* data, size_t size){
     @param data pointer to canary
     @param size size of elem_t in bytes
 */
-void SetCanary(char* canary_ptr, size_t canary_size){
-    for (char* byte = canary_ptr, cnt = 0; cnt < canary_size; cnt++, byte++){
+void SetCanary(void* canary_ptr, size_t canary_size){
+    for (char* byte = (char*) canary_ptr, cnt = 0; cnt < canary_size; cnt++, byte++){
         *byte = CANARY_BYTE;
     }
 }
 
-bool CanaryIsValid(char* canary_ptr, size_t canary_size){
-    for (char* byte = canary_ptr, cnt = 0; cnt < canary_size; cnt++, byte++){
+bool CanaryIsValid(void* canary_ptr, size_t canary_size){
+    for (char* byte = (char*) canary_ptr, cnt = 0; cnt < canary_size; cnt++, byte++){
         if (*byte != CANARY_BYTE)
             return false;
     }

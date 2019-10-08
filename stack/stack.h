@@ -132,5 +132,5 @@ unsigned long GetStackHash(stack_t* stack);
 void RewriteStackHash(stack_t* stack);
 void MemoryOk(stack_t* stack, void* block);
 void SetDataCanaries(elem_t* data, size_t size);
-void SetCanary(char* canary_ptr, size_t canary_size);
-bool CanaryIsValid(char* canary_ptr, size_t canary_size);
+void SetCanary(void* canary_ptr, size_t canary_size);
+bool CanaryIsValid(void* canary_ptr, size_t canary_size);
