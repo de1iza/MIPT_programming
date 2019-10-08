@@ -121,6 +121,10 @@ int main() {
     return 0;
 }
 
+/*! Prints first or last canary of data
+    @param stack pointer to stack structure
+    @param canary_num sequence number of data canary
+*/
 void PrintCanary(stack_t* stack, int canary_num){
     int valid_canary = 0;
     SetCanary((char*) &valid_canary, sizeof(elem_t));
@@ -130,7 +134,9 @@ void PrintCanary(stack_t* stack, int canary_num){
         printf("0x%x (Expected 0x%x)\n", (stack)->data[stack->max_size], valid_canary);
 }
 
-
+/*! Prints integer stack elements
+    @param stack pointer to stack structure
+*/
 void PrintInts(stack_t* stack) {
     PrintCanary(stack, 1);
     for (int i = 0; i < (stack)->max_size; ++i){
@@ -141,6 +147,9 @@ void PrintInts(stack_t* stack) {
     PrintCanary(stack, 2);
 }
 
+/*! Prints float stack elements
+    @param stack pointer to stack structure
+*/
 void PrintFloats(stack_t* stack) {
     PrintCanary(stack, 1);
     for (int i = 0; i < (stack)->size; ++i){
@@ -151,6 +160,9 @@ void PrintFloats(stack_t* stack) {
     PrintCanary(stack, 2);
 }
 
+/*! Prints char stack elements
+    @param stack pointer to stack structure
+*/
 void PrintChars(stack_t* stack) {
     PrintCanary(stack, 1);
     for (int i = 0; i < (stack)->size; ++i){
@@ -161,6 +173,9 @@ void PrintChars(stack_t* stack) {
     PrintCanary(stack, 2);
 }
 
+/*! Prints stack elements depending on their type
+    @param stack pointer to stack structure
+*/
 void PrintStackElems(stack_t* stack) {
     if (typeid((stack)->data[0]) == typeid(int)) { PrintInts(stack); }
     else if (typeid((stack)->data[0]) == typeid(float)) { PrintFloats(stack); }
@@ -171,7 +186,7 @@ void PrintStackElems(stack_t* stack) {
     }
 }
 
-/* Function to initialize stack (constructor)
+/*! Function to initialize stack (constructor)
     @param stack pointer to stack structure
     @param max_size size of a full stack
 */
@@ -352,7 +367,9 @@ unsigned long GetHash(void* first_byte, void* last_byte){
     return hash;
 }
 
-
+/*! Returnes hash of struct and data
+    @param stack pointer to stack structure
+*/
 unsigned long GetStackHash(stack_t* stack){
     return GetHash(&stack->canary1, &stack->hash) +
     GetHash(&stack->canary2, &stack->canary2 + 1) +
@@ -390,7 +407,7 @@ void SetDataCanaries(elem_t* data, size_t size){
 
 /*! Fills each byte of canary with default canary byte to fit in elem_t array
     @param data pointer to canary
-    @param size size of elem_t in bytes
+    @param size size of canary in bytes
 */
 void SetCanary(void* canary_ptr, size_t canary_size){
     for (char* byte = (char*) canary_ptr, cnt = 0; cnt < canary_size; cnt++, byte++){
@@ -398,6 +415,10 @@ void SetCanary(void* canary_ptr, size_t canary_size){
     }
 }
 
+/*! Checks if each byte of canary is valid
+    @param data pointer to canary
+    @param size size of canary in bytes
+*/
 bool CanaryIsValid(void* canary_ptr, size_t canary_size){
     for (char* byte = (char*) canary_ptr, cnt = 0; cnt < canary_size; cnt++, byte++){
         if (*byte != CANARY_BYTE)
