@@ -28,18 +28,20 @@ const int RESIZE_VAL = 20;
 #define STACK_ASSERT(stack){                            \
             StackError error = CheckStack(stack);       \
             if (error) {                                \
-                DumpStack(stack, error, __LINE__);      \
-                exit(error);                            \
+                ABORT(stack, error, __LINE__);          \
             }                                           \
             if (ERRNO) {                                \
-                DumpStack(stack, ERRNO, __LINE__);      \
-                exit(ERRNO);                            \
+                ABORT(stack, ERRNO, __LINE__);          \
             }                                           \
         }
 #else
     #define STACK_ASSERT(stack) ;
 #endif
 
+#define ABORT(stack, error, line){          \
+    DumpStack(stack, error, line);          \
+    exit(error);                            \
+}
 
 #define STACK_INIT(stack, max_size){    \
     stack.name = #stack;                \
@@ -108,15 +110,13 @@ void PrintStackElems(stack_t* stack);
 int main() {
     const int DEFAULT_SIZE = 10;
 
-   // Test();
+    //Test();
 
    TestUnderflow();
     //TestOverflow();
     //TestBrokenArray();
     //TestBrokenData();
     //TestBrokenCanary();
-
-
 
     return 0;
 }
@@ -182,7 +182,7 @@ void PrintStackElems(stack_t* stack) {
     else if (typeid((stack)->data[0]) == typeid(char)) { PrintChars(stack); }
     else {
         fprintf(stderr, "Unknown data type");
-        exit(-1);
+
     }
 }
 
@@ -361,7 +361,8 @@ void StackResize(stack_t* stack, int resize_val){
 unsigned long GetHash(void* first_byte, void* last_byte){
     unsigned int hash = 0;
     for (char* byte = (char*) first_byte; byte < (char*) last_byte; byte++){
-        hash += (unsigned int) *byte * ((unsigned int) *byte << 3) + 4622041 ^ (unsigned int) *byte;
+        unsigned int int_byte = (unsigned int) *byte;
+        hash += int_byte * (int_byte << 3) + 4622041 ^ int_byte;
     }
 
     return hash;
