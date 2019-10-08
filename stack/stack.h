@@ -5,7 +5,7 @@
 #include <typeinfo>
 #include <wchar.h>
 
-#define DEBUG 1
+//#define DEBUG 1
 
 typedef int elem_t;
 
@@ -30,6 +30,10 @@ const int RESIZE_VAL = 20;
             if (error) {                                \
                 DumpStack(stack, error, __LINE__);      \
                 exit(error);                            \
+            }                                           \
+            if (ERRNO) {                                \
+                DumpStack(stack, ERRNO, __LINE__);      \
+                exit(ERRNO);                            \
             }                                           \
         }
 #else
@@ -107,6 +111,8 @@ enum StackError{
     MEMORY_ALLOCATION_ERROR,
 };
 
+StackError ERRNO = OK;
+
 const char* error_strings[] = {"OK",
                                "NULL_STACK_PTR",
                                "NULL_DATA_PTR",
@@ -121,7 +127,7 @@ const char* error_strings[] = {"OK",
 void StackInit(stack_t* stack, size_t max_size);
 void StackDelete(stack_t* stack);
 void StackPush(stack_t* stack, elem_t value);
-StackError StackPop(stack_t* stack, elem_t* value);
+bool StackPop(stack_t* stack, elem_t* value);
 void DumpStack(stack_t* stack, StackError error, int line);
 bool IsEmpty(stack_t* stack);
 StackError CheckStack(stack_t* stack);
@@ -130,7 +136,7 @@ void StackResize(stack_t* stack, int resize_val);
 unsigned long GetHash(void* first_byte, void* last_byte);
 unsigned long GetStackHash(stack_t* stack);
 void RewriteStackHash(stack_t* stack);
-void MemoryOk(stack_t* stack, void* block);
+StackError MemoryOk(stack_t* stack, void* block);
 void SetDataCanaries(elem_t* data, size_t size);
 void SetCanary(void* canary_ptr, size_t canary_size);
 bool CanaryIsValid(void* canary_ptr, size_t canary_size);

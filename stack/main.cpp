@@ -14,7 +14,7 @@ int main() {
 
    // Test();
 
-   //TestUnderflow();
+   TestUnderflow();
     //TestOverflow();
     //TestBrokenArray();
     //TestBrokenData();
@@ -44,9 +44,7 @@ void StackInit(stack_t* stack, size_t max_size){
 
     stack->hash = GetStackHash(stack);
 
-
     STACK_ASSERT(stack);
-
 
 }
 
@@ -85,7 +83,7 @@ void StackPush(stack_t* stack, elem_t value){
     @param stack pointer to stack structure
     @return value top element
 */
-StackError StackPop(stack_t* stack, elem_t* value){
+bool StackPop(stack_t* stack, elem_t* value){
     STACK_ASSERT(stack);
 
     if (!IsEmpty(stack)) {
@@ -96,14 +94,16 @@ StackError StackPop(stack_t* stack, elem_t* value){
     } else {
         #ifndef DEBUG
             printf("Stack is empty. Unable to pop.\n");
-            return UNDERFLOW;
         #endif
-        stack->size = -1;
+        ERRNO = UNDERFLOW;
+
+        STACK_ASSERT(stack);
+        return 1;
     }
 
     STACK_ASSERT(stack);
 
-    return OK;
+    return 0;
 }
 
 /*! Prints full info about error and all stack structure fields
@@ -147,7 +147,7 @@ StackError CheckStack(stack_t* stack){
     return OK;
 }
 
-/*! Checks is stack is empty
+/*! Checks if stack is empty
     @param stack pointer to stack structure
 */
 bool IsEmpty(stack_t* stack){
@@ -174,7 +174,10 @@ void StackResize(stack_t* stack, int resize_val){
 
     void* new_mem_block = (void*) realloc((stack)->data - 1, new_size * sizeof(elem_t));
 
-    MemoryOk(stack, new_mem_block);
+    StackError error = MemoryOk(stack, new_mem_block);
+    if (error) ERRNO = error;
+
+    STACK_ASSERT(stack);
 
     stack->data = (elem_t*) new_mem_block + 1;
 
@@ -222,13 +225,11 @@ void RewriteStackHash(stack_t* stack){
     @param stack pointer to stack structure
     @param block pointer to allocated memory
 */
-void MemoryOk(stack_t* stack, void* block){
+StackError MemoryOk(stack_t* stack, void* block){
     if (block == nullptr) {
-        StackError error = MEMORY_ALLOCATION_ERROR;
-        DumpStack(stack, error, __LINE__);
-        exit(error);
+        return MEMORY_ALLOCATION_ERROR;
     }
-
+    return OK;
 }
 
 /*! Sets front and back canaries to data array
@@ -265,13 +266,11 @@ int TestUnderflow(){
 
     elem_t val = 0;
 
-    //StackPush(&stk, 7);
+    StackPop(&stk, &val);
 
-    StackError error = StackPop(&stk, &val);
-
-    if (error) exit(error);
-    //printf("Pop result: %s\n", error_strings[error]);
-
+    StackPush(&stk, 8);
+    StackPop(&stk, &val);
+    StackPop(&stk, &val);
 
     StackDelete(&stk);
     return 0;
