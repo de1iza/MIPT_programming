@@ -2,12 +2,108 @@
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
+#include <typeinfo>
 #include <wchar.h>
 
-#include "stack.h"
-#include "tests.h"
+#define DEBUG 1
 
+typedef int elem_t;
+
+struct stack_t{
+    int canary1;
+    int max_size;
+    int size;
+    const char* name;
+    elem_t* data;
+    unsigned long hash;
+    int canary2;
+
+};
+
+const char CANARY_BYTE = 0xAB;
+const int POISON  = 13377331;
+const int RESIZE_VAL = 20;
+
+#ifdef DEBUG
+#define STACK_ASSERT(stack){                            \
+            StackError error = CheckStack(stack);       \
+            if (error) {                                \
+                DumpStack(stack, error, __LINE__);      \
+                exit(error);                            \
+            }                                           \
+            if (ERRNO) {                                \
+                DumpStack(stack, ERRNO, __LINE__);      \
+                exit(ERRNO);                            \
+            }                                           \
+        }
+#else
+    #define STACK_ASSERT(stack) ;
+#endif
+
+
+#define STACK_INIT(stack, max_size){    \
+    stack.name = #stack;                \
+    StackInit(&stack, max_size);        \
+}
+
+#define RED "\x1B[31m"
+#define CYAN "\x1B[36m"
+#define RESET "\x1B[0m"
+
+
+enum StackError{
+    OK,
+    NULL_STACK_PTR,
+    NULL_DATA_PTR,
+    INVALID_STACK_SIZE,
+    STRUCTURE_CANARY_DEAD,
+    DATA_CANARY_DEAD,
+    WRONG_HASH,
+    UNDERFLOW,
+    MEMORY_ALLOCATION_ERROR,
+};
+
+StackError ERRNO = OK;
+
+const char* error_strings[] = {"OK",
+                               "NULL_STACK_PTR",
+                               "NULL_DATA_PTR",
+                               "INVALID_STACK_SIZE",
+                               "STRUCTURE_CANARY_DEAD",
+                               "DATA_CANARY_DEAD",
+                               "WRONG_HASH",
+                               "UNDERFLOW",
+                               "MEMORY_ALLOCATION_ERROR"};
+
+
+void StackInit(stack_t* stack, size_t max_size);
+void StackDelete(stack_t* stack);
+void StackPush(stack_t* stack, elem_t value);
+bool StackPop(stack_t* stack, elem_t* value);
+void DumpStack(stack_t* stack, StackError error, int line);
+bool IsEmpty(stack_t* stack);
+StackError CheckStack(stack_t* stack);
+void ShowElementStatus(elem_t value);
+void StackResize(stack_t* stack, int resize_val);
+unsigned long GetHash(void* first_byte, void* last_byte);
+unsigned long GetStackHash(stack_t* stack);
+void RewriteStackHash(stack_t* stack);
+StackError MemoryOk(stack_t* stack, void* block);
+void SetDataCanaries(elem_t* data, size_t size);
+void SetCanary(void* canary_ptr, size_t canary_size);
+bool CanaryIsValid(void* canary_ptr, size_t canary_size);
 int Test();
+int TestUnderflow();
+int TestOverflow();
+int TestBrokenArray();
+int TestBrokenData();
+int TestBrokenCanary();
+void PrintCanary(stack_t* stack, int canary_num);
+void PrintInts(stack_t* stack);
+void PrintFloats(stack_t* stack);
+void PrintChars(stack_t* stack);
+void PrintStackElems(stack_t* stack);
+
 
 int main() {
     const int DEFAULT_SIZE = 10;
@@ -23,6 +119,56 @@ int main() {
 
 
     return 0;
+}
+
+void PrintCanary(stack_t* stack, int canary_num){
+    int valid_canary = 0;
+    SetCanary((char*) &valid_canary, sizeof(elem_t));
+    if (canary_num == 1)
+        printf("0x%x (Expected 0x%x)\n", (stack)->data[-1], valid_canary);
+    else
+        printf("0x%x (Expected 0x%x)\n", (stack)->data[stack->max_size], valid_canary);
+}
+
+
+void PrintInts(stack_t* stack) {
+    PrintCanary(stack, 1);
+    for (int i = 0; i < (stack)->max_size; ++i){
+        printf("! %s data[%02d]: %s %d ", CYAN, i, RESET, (stack)->data[i]);
+        ShowElementStatus(stack->data[i]);
+        printf("\n");
+    }
+    PrintCanary(stack, 2);
+}
+
+void PrintFloats(stack_t* stack) {
+    PrintCanary(stack, 1);
+    for (int i = 0; i < (stack)->size; ++i){
+        printf("! %s data[%d]: %s %g\n", CYAN, i, RESET, (stack)->data[i]);
+        ShowElementStatus(stack->data[i]);
+        printf("\n");
+    }
+    PrintCanary(stack, 2);
+}
+
+void PrintChars(stack_t* stack) {
+    PrintCanary(stack, 1);
+    for (int i = 0; i < (stack)->size; ++i){
+        printf("! %s data[%d]: %s %c\n", CYAN, i, RESET, (stack)->data[i]);
+        ShowElementStatus(stack->data[i]);
+        printf("\n");
+    }
+    PrintCanary(stack, 2);
+}
+
+void PrintStackElems(stack_t* stack) {
+    if (typeid((stack)->data[0]) == typeid(int)) { PrintInts(stack); }
+    else if (typeid((stack)->data[0]) == typeid(float)) { PrintFloats(stack); }
+    else if (typeid((stack)->data[0]) == typeid(char)) { PrintChars(stack); }
+    else {
+        fprintf(stderr, "Unknown data type");
+        exit(-1);
+    }
 }
 
 /* Function to initialize stack (constructor)
@@ -122,7 +268,7 @@ void DumpStack(stack_t* stack, StackError error, int line){
     printf("! %s canary1: %-5s 0x%x (Expected 0x%x)\n", CYAN, RESET, stack->canary1, valid_canary);
     printf("! %s canary2: %-5s 0x%x (Expected 0x%x)\n", CYAN, RESET, stack->canary2, valid_canary);
     printf("! %s hash: %-8s %lu (Expected %lu)\n", CYAN, RESET, stack->hash, GetStackHash(stack));
-    PRINT_STACK_ELEMS(stack);
+    PrintStackElems(stack);
 }
 
 /*! Validates stack fields and returns error code (or 0 if everything is ok)
