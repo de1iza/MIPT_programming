@@ -4,7 +4,7 @@
 #include <string.h>
 #include "textlib.h"
 
-
+const int MAX_COMMAND_SIZE = 100;
 
 line* read_commands(const char* filename, int* n_cmds);
 int* process_code(line* commands, int n_cmds);
@@ -89,10 +89,10 @@ int* process_code(line* commands, int n_cmds) {
 
     assert(buf);
 
-    char command_name[100] = "";
+    char command_name[MAX_COMMAND_SIZE] = "";
     int value = 0;
 
-    #define DEF_CMD(name, num)                      \
+    #define DEF_CMD(name, num, code)                \
         else if (strcmp(command_name, #name) == 0)  \
             buf[2 * i] = num;
 
@@ -109,7 +109,6 @@ int* process_code(line* commands, int n_cmds) {
         }
 
         if (sscanf(commands[i].p_start, "%*[^0-9]%d", &value)) {
-            printf("VALUE %d\n", value);
             buf[2 * i + 1] = value;
         }
 
@@ -125,12 +124,12 @@ int* process_code(line* commands, int n_cmds) {
 }
 
 bool dump_code(int* buf, int n_lines, const char* filename) {
-
     FILE  *fp = open_file(filename, "wb");
     assert(fp);
+    if (fp == NULL) return false;
 
     fwrite(buf, 2 * sizeof(int), n_lines, fp);
 
     fclose(fp);
-
+    return true;
 }

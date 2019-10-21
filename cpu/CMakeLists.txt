@@ -3,4 +3,4 @@ project(cpu)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(cpu asm.cpp)
+add_executable(cpu cpu.cpp ../stack/stack.h)
