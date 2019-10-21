@@ -3,4 +3,7 @@ project(cpu)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(cpu disasm.cpp ../stack/stack.h)
+set(Sources asm.cpp cpu.cpp disasm.cpp)
+set(Headers enum.h commands.h ../stack/stack.h)
+
+add_executable(cpu disasm.cpp ${Sources} ${Headers})
