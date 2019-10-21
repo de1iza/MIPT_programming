@@ -1,0 +1,8 @@
+#ifndef CPU_COMMANDS_H
+#define CPU_COMMANDS_H
+
+DEF_CMD(PUSH, 1)
+DEF_CMD(ADD, 2)
+DEF_CMD(SUB, 3)
+
+#endif //CPU_COMMANDS_H
