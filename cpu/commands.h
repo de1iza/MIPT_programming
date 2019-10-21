@@ -1,11 +1,11 @@
 //#ifndef CPU_COMMANDS_H
 //#define CPU_COMMANDS_H
 
-DEF_CMD(PUSH, 1, {
+DEF_CMD(PUSH, 1, 1, {
     StackPush(&cpu, code[i + 1]);
 })
 
-DEF_CMD(ADD, 2, {
+DEF_CMD(ADD, 2, 0, {
     int a = 0;
     int b = 0;
     StackPop(&cpu, &a);
@@ -13,7 +13,7 @@ DEF_CMD(ADD, 2, {
     StackPush(&cpu, a + b);
 })
 
-DEF_CMD(SUB, 3, {
+DEF_CMD(SUB, 3, 0, {
     int a = 0;
     int b = 0;
     StackPop(&cpu, &a);
@@ -21,7 +21,7 @@ DEF_CMD(SUB, 3, {
     StackPush(&cpu, a - b);
 })
 
-DEF_CMD(MUL, 4, {
+DEF_CMD(MUL, 4, 0, {
     int a = 0;
     int b = 0;
     StackPop(&cpu, &a);
@@ -29,7 +29,7 @@ DEF_CMD(MUL, 4, {
     StackPush(&cpu, a * b);
 })
 
-DEF_CMD(DIV, 5, {
+DEF_CMD(DIV, 5, 0, {
     int a = 0;
     int b = 0;
     StackPop(&cpu, &a);

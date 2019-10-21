@@ -7,12 +7,12 @@
 const int MAX_COMMAND_SIZE = 100;
 
 line* read_commands(const char* filename, int* n_cmds);
-int* process_code(line* commands, int n_cmds);
+int* code_to_buf(line* commands, int n_cmds);
 bool dump_code(int* buf, int n_lines, const char* filename);
 
 int main() {
-    const char* INPUT_FILE = "input.txt";
-    const char* OUTPUT_FILE = "output";
+    const char* INPUT_FILE = "code.txt";
+    const char* OUTPUT_FILE = "bin_data";
 
     line* commands = NULL;
     int n_cmds = 0;
@@ -22,7 +22,7 @@ int main() {
     assert(commands);
     assert(n_cmds);
 
-    int* buf = process_code(commands, n_cmds);
+    int* buf = code_to_buf(commands, n_cmds);
 
     assert(buf);
 
@@ -53,46 +53,16 @@ line* read_commands(const char* filename, int* n_cmds) { //TODO bool - return er
     return index;
 }
 
-line* build_index(char* lines, int n_lines) {
-    line* index = (line*) calloc(n_lines + 1, sizeof(line));
-    arrange_ptrs(lines, n_lines, index);
-    return index;
-}
-
-void arrange_ptrs(char* lines, int n_lines, line* index) {
-    int i = 1, line_cnt = 0;
-
-    assert(lines);
-    assert(n_lines);
-    assert(index);
-
-    index->p_start = lines;
-
-    do {
-        if (lines[i - 1] == '\0'){
-            assert(i - 2);
-
-            index->p_end = lines + i - 2;
-            index++;
-            index->p_start = lines + i;
-            line_cnt++;
-        }
-        i++;
-    } while(line_cnt < n_lines);
-
-    assert(line_cnt);
-}
-
-
-int* process_code(line* commands, int n_cmds) {
+int* code_to_buf(line* commands, int n_cmds) {
     int* buf = (int*)calloc(n_cmds,  2 * sizeof(int));
 
+    assert(commands);
     assert(buf);
 
     char command_name[MAX_COMMAND_SIZE] = "";
     int value = 0;
 
-    #define DEF_CMD(name, num, code)                \
+    #define DEF_CMD(name, num, args, code)          \
         else if (strcmp(command_name, #name) == 0)  \
             buf[2 * i] = num;
 
@@ -108,11 +78,15 @@ int* process_code(line* commands, int n_cmds) {
             fprintf(stderr, "Wrong command: %s", command_name);
         }
 
-        if (sscanf(commands[i].p_start, "%*[^0-9]%d", &value)) {
+        printf("%s\n", command_name);
+
+        if (sscanf(commands[i].p_start, "%*[^0-9]%d", &value) == 1) {
             buf[2 * i + 1] = value;
         }
+        else {
+            buf[2 * i + 1] = -1;
+        }
 
-        printf("%s\n", command_name);
     }
 
     for (int i = 0; i < 2* n_cmds; i++) {

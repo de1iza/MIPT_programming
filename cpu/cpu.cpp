@@ -3,7 +3,6 @@
 #include <assert.h>
 #include "../stack/stack.h"
 #include "textlib.h"
-
 #include "enum.h"
 
 #define DEBUG 1
@@ -14,7 +13,7 @@ int read_buf(const char* filename, int** buf);
 bool execute(int* code, int n_cmds);
 
 int main() {
-    const char* CODE_FILE = "output";
+    const char* CODE_FILE = "bin_data";
 
     int* buf = NULL;
     int n_cmds = read_buf(CODE_FILE, &buf);
@@ -46,7 +45,7 @@ bool execute(int* code, int n_cmds) {
     static stack_t cpu = {};
     STACK_INIT(cpu, CPU_STACK_SIZE);
 
-    #define DEF_CMD(name, num, code)    \
+    #define DEF_CMD(name, num, args, code)   \
         case CMD_##name: code; break;
 
     for (int i = 0; i < 2 * n_cmds; i += 2) {
@@ -56,9 +55,11 @@ bool execute(int* code, int n_cmds) {
 
             default: fprintf(stderr, "Wrong command code: %d", code[i]); return false; break;
         }
-        STACK_ASSERT(&cpu);
+        //STACK_ASSERT(&cpu);
     }
 
     #undef DEF_CMD
+
+    StackDelete(&cpu);
     return true;
 }
