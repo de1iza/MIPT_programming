@@ -7,8 +7,15 @@
 
 #define DEBUG 1
 
+const int MAX_COMMAND_SIZE = 100;
 const int CPU_STACK_SIZE = 10;
 
+struct cpu_t {
+    stack_t stack = {};
+    elem_t registers[4] = {0};
+};
+
+void cpu_init(cpu_t* cpu);
 int read_buf(const char* filename, int** buf);
 bool execute(int* code, int n_cmds);
 
@@ -42,24 +49,25 @@ int read_buf(const char* filename, int** buf) {
 }
 
 bool execute(int* code, int n_cmds) {
-    static stack_t cpu = {};
-    STACK_INIT(cpu, CPU_STACK_SIZE);
+    static cpu_t cpu = {};
+    cpu_init(&cpu);
 
-    #define DEF_CMD(name, num, args, code)   \
-        case CMD_##name: code; break;
+    #define DEF_CMD(name, num, args, code) case CMD_##name: code; break;
 
     for (int i = 0; i < 2 * n_cmds; i += 2) {
-        printf("CODE[I] %d\n", code[i]);
         switch(code[i]) {
             #include "commands.h"
 
             default: fprintf(stderr, "Wrong command code: %d", code[i]); return false; break;
         }
-        //STACK_ASSERT(&cpu);
     }
 
     #undef DEF_CMD
 
-    StackDelete(&cpu);
     return true;
 }
+
+void cpu_init(cpu_t* cpu) {
+    STACK_INIT(cpu->stack, CPU_STACK_SIZE);
+}
+

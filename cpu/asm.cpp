@@ -61,6 +61,7 @@ int* code_to_buf(line* commands, int n_cmds) {
 
     char command_name[MAX_COMMAND_SIZE] = "";
     int value = 0;
+    char reg[10] = "";
 
     #define DEF_CMD(name, num, args, code)          \
         else if (strcmp(command_name, #name) == 0)  \
@@ -68,7 +69,33 @@ int* code_to_buf(line* commands, int n_cmds) {
 
     for (int i = 0; i < n_cmds; i++) {
 
-        sscanf(commands[i].p_start, "%s", command_name);
+        char* pch = strtok(commands[i].p_start, " ");
+
+        strcpy(command_name, pch);
+
+        pch = strtok(NULL, " ");
+        char* end = NULL;
+
+        if (pch == NULL) {
+            // cmd without args
+            buf[2 * i + 1] = -1;
+        }
+        else {
+            // cmd with args
+            int arg = strtol(pch, &end, 10);
+
+            if (pch == end) {
+                //cmd with reg
+                printf("REG %s\n", pch);
+                strcat(command_name, " ");
+                strcat(command_name, pch);
+                buf[2 * i + 1] = -1;
+            }
+            else {
+                // cmd with num arg
+                buf[2 * i + 1] = arg;
+            }
+        }
 
         if (false) ;
 
@@ -76,15 +103,6 @@ int* code_to_buf(line* commands, int n_cmds) {
 
         else {
             fprintf(stderr, "Wrong command: %s", command_name);
-        }
-
-        printf("%s\n", command_name);
-
-        if (sscanf(commands[i].p_start, "%*[^0-9]%d", &value) == 1) {
-            buf[2 * i + 1] = value;
-        }
-        else {
-            buf[2 * i + 1] = -1;
         }
 
     }
