@@ -7,7 +7,7 @@
 const int MAX_COMMAND_SIZE = 100;
 
 line* read_commands(const char* filename, int* n_cmds);
-int* code_to_buf(line* commands, int n_cmds);
+int* code_to_buf(line* commands, int n_cmds, int* buf_size);
 bool dump_code(int* buf, int n_lines, const char* filename);
 
 int main() {
@@ -21,12 +21,13 @@ int main() {
 
     assert(commands);
     assert(n_cmds);
+    int buf_size = 0;
 
-    int* buf = code_to_buf(commands, n_cmds);
+    int* buf = code_to_buf(commands, n_cmds, &buf_size);
 
     assert(buf);
 
-    dump_code(buf, n_cmds, OUTPUT_FILE);
+    dump_code(buf, buf_size, OUTPUT_FILE);
 
     return 0;
 }
@@ -53,23 +54,29 @@ line* read_commands(const char* filename, int* n_cmds) { //TODO bool - return er
     return index;
 }
 
-int* code_to_buf(line* commands, int n_cmds) {
+int* code_to_buf(line* commands, int n_cmds, int* buf_size) {
     int* buf = (int*)calloc(n_cmds,  2 * sizeof(int));
 
     assert(commands);
     assert(buf);
 
     char command_name[MAX_COMMAND_SIZE] = "";
+    char cur_command[MAX_COMMAND_SIZE] = "";
     int value = 0;
     char reg[10] = "";
 
     #define DEF_CMD(name, num, args, code)          \
         else if (strcmp(command_name, #name) == 0)  \
-            buf[2 * i] = num;
+            buf[2 * buf_cnt] = num;
 
-    for (int i = 0; i < n_cmds; i++) {
+    int cmd_cnt = 0, buf_cnt = 0;
+    while (cmd_cnt < n_cmds) {
 
-        char* pch = strtok(commands[i].p_start, " ");
+        strcpy(cur_command, commands[cmd_cnt].p_start);
+
+        printf("%s\n", cur_command);
+
+        char* pch = strtok(cur_command, " ");
 
         strcpy(command_name, pch);
 
@@ -77,25 +84,30 @@ int* code_to_buf(line* commands, int n_cmds) {
         char* end = NULL;
 
         if (pch == NULL) {
-            // cmd without args
-            buf[2 * i + 1] = -1;
+            // cmd without arg
+            buf[2 * buf_cnt + 1] = -1;
         }
         else {
-            // cmd with args
+            // cmd with arg
             int arg = strtol(pch, &end, 10);
 
             if (pch == end) {
                 //cmd with reg
-                printf("REG %s\n", pch);
                 strcat(command_name, " ");
                 strcat(command_name, pch);
-                buf[2 * i + 1] = -1;
+
+                buf[2 * buf_cnt + 1] = -1;
             }
             else {
                 // cmd with num arg
-                buf[2 * i + 1] = arg;
+                if (strcmp(command_name, "JMP") == 0) {
+                    cmd_cnt = arg - 1;
+                    continue;
+                }
+                buf[2 * buf_cnt + 1] = arg;
             }
         }
+
 
         if (false) ;
 
@@ -105,13 +117,17 @@ int* code_to_buf(line* commands, int n_cmds) {
             fprintf(stderr, "Wrong command: %s", command_name);
         }
 
+        cmd_cnt++; buf_cnt++;
+
     }
 
-    for (int i = 0; i < 2* n_cmds; i++) {
-        printf("%d ", buf[i]);
+    for (int i = 0; i < 2 * buf_cnt; i += 2) {
+        printf("%d %d\n", buf[i], buf[i+1]);
     }
 
     #undef DEF_CMD
+    *buf_size = buf_cnt;
+
     return buf;
 }
 

@@ -52,9 +52,11 @@ bool execute(int* code, int n_cmds) {
     static cpu_t cpu = {};
     cpu_init(&cpu);
 
+
     #define DEF_CMD(name, num, args, code) case CMD_##name: code; break;
 
     for (int i = 0; i < 2 * n_cmds; i += 2) {
+        printf("%d\n", code[i]);
         switch(code[i]) {
             #include "commands.h"
 

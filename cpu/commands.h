@@ -82,5 +82,9 @@ DEF_CMD(OUT, 15, 0, {
     printf("Value from stack: %d\n", value);
 })
 
+DEF_CMD(JMP, 16, 1, {
+    
+})
+
 //#endif
 // CPU_COMMANDS_H
