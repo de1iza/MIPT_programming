@@ -57,6 +57,8 @@ bool execute(int* code, int n_cmds) {
 
     #define DEF_CMD(name, num, args, code) case CMD_##name: code; break;
 
+    bool end_flag = false;
+
     int i = 0;
     while (i < 2 * n_cmds) {
         printf("%d\n", code[i]);
@@ -65,6 +67,7 @@ bool execute(int* code, int n_cmds) {
 
             default: fprintf(stderr, "Wrong command code: %d", code[i]); return false; break;
         }
+        if (end_flag) break;
         i += 2;
     }
 

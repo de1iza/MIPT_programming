@@ -83,7 +83,7 @@ DEF_CMD(OUT, 15, 0, {
 })
 
 DEF_CMD(END, 16, 0, {
-
+    end_flag = true;
 })
 
 DEF_CMD(JMP, 17, 1, {
