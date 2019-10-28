@@ -9,9 +9,11 @@
 
 const int MAX_COMMAND_SIZE = 100;
 const int CPU_STACK_SIZE = 10;
+const int CPU_CALLS_STACK_SIZE = 10;
 
 struct cpu_t {
     stack_t stack = {};
+    stack_t calls = {};
     elem_t registers[4] = {0};
 };
 
@@ -73,5 +75,6 @@ bool execute(int* code, int n_cmds) {
 
 void cpu_init(cpu_t* cpu) {
     STACK_INIT(cpu->stack, CPU_STACK_SIZE);
+    STACK_INIT(cpu->calls, CPU_CALLS_STACK_SIZE);
 }
 

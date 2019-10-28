@@ -144,5 +144,14 @@ DEF_CMD(JNE, 23, 1, {
         i = 2 * code[i + 1] - 2;
 })
 
+DEF_CMD(CALL, 24, 1, {
+    StackPush(&cpu.calls, i);
+    i = 2 * code[i + 1] - 2;
+})
+
+DEF_CMD(RET, 25, 0, {
+    StackPop(&cpu.calls, &i);
+})
+
 //#endif
 // CPU_COMMANDS_H
