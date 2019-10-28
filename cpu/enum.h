@@ -2,7 +2,7 @@
 #define CPU_ENUM_H
 
 
-#define DEF_CMD(name, num, args, type, code) CMD_##name = num,
+#define DEF_CMD(name, num, args, code) CMD_##name = num,
 
 enum Commands {
     #include "commands.h"

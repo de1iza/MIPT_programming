@@ -22,6 +22,7 @@ bool dump_code(int* buf, int n_lines, const char* filename);
 bool islabel(char* command);
 void make_label_name(char* label);
 void arrange_labels(line* commands, int n_cmds);
+int get_label_value(char* label_name);
 
 int main() {
     const char* INPUT_FILE = "code.txt";
@@ -80,10 +81,10 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
     int value = 0;
     char reg[10] = "";
 
-
     #define DEF_CMD(name, num, args, code)          \
         else if (strcmp(command_name, #name) == 0)  \
             buf[2 * buf_cnt] = num;
+
 
     int cmd_cnt = 0, buf_cnt = 0, line_cnt = 0;
 
@@ -94,6 +95,10 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
     }
 
     printf("N_CMDS %d\n", n_lines);
+
+    //#define DEF_CMD(name, num, args, code)      \
+        if (strcmp(command_name, #name) == 0)   \
+            code;                               \
 
     while (line_cnt < n_lines) {
         char command_name[MAX_COMMAND_SIZE] = "";
@@ -120,31 +125,26 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
             int arg = strtol(pch, &end, 10);
 
             if (pch == end) {
-                //cmd with string arg (NOW: only JMP!)
+                //cmd with string arg (NOW: only JUMP!)
 
                 //strcat(command_name, " ");
                 //strcat(command_name, pch);
-                for (int j = 0; j < n_labels; j++) {
 
-                    if (strcmp(labels[j].name, pch) == 0) {
-                        line_cnt = labels[j].value - 1;
-                        break;
-                    }
-                }
-                line_cnt++;
-                continue;
-                //buf[2 * buf_cnt + 1] = -1;
+
+                int jmp_val = get_label_value(pch);
+                assert(jmp_val);
+
+                buf[2 * buf_cnt + 1] = jmp_val;
             }
             else {
                 // cmd with num arg
-                if (strcmp(command_name, "JMP") == 0) {
-                    line_cnt = arg - 1;
-                    continue;
-                }
+
                 buf[2 * buf_cnt + 1] = arg;
             }
 
         }
+
+
 
         if (false) ;
 
@@ -205,16 +205,31 @@ void arrange_labels(line* commands, int n_lines) {
     for (int i = 0; i < n_lines; i++) {
         strcpy(cur_command, commands[i].p_start);
         char* command_name = strtok(cur_command, " ");
-        cmd_cnt++;
+
         if (islabel(command_name)) {
             make_label_name(command_name);
             strcpy(labels[labels_cnt].name, command_name);
             labels[labels_cnt].value = cmd_cnt;
             labels_cnt++;
         }
+        else {
+            cmd_cnt++;
+        }
 
     }
     n_labels = labels_cnt;
 
     #undef DEF_CMD
+}
+
+int get_label_value(char* label_name) {
+    assert(label_name);
+
+    int label_val = 0;
+    for (int j = 0; j < n_labels; j++) {
+        if (strcmp(labels[j].name, label_name) == 0) {
+            return labels[j].value;
+        }
+    }
+    return -1;
 }

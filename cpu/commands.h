@@ -87,9 +87,62 @@ DEF_CMD(END, 16, 0, {
 })
 
 DEF_CMD(JMP, 17, 1, {
-
+    i = 2 * code[i + 1] - 2;
 })
 
+DEF_CMD(JA, 18, 1, {
+    int a = 0;
+    int b = 0;
+    StackPop(&cpu.stack, &a);
+    StackPop(&cpu.stack, &b);
+    if (a < b)
+        i = 2 * code[i + 1] - 2;
+})
+
+DEF_CMD(JAE, 19, 1, {
+    int a = 0;
+    int b = 0;
+    StackPop(&cpu.stack, &a);
+    StackPop(&cpu.stack, &b);
+    if (a <= b)
+        i = 2 * code[i + 1] - 2;
+})
+
+DEF_CMD(JB, 20, 1, {
+    int a = 0;
+    int b = 0;
+    StackPop(&cpu.stack, &a);
+    StackPop(&cpu.stack, &b);
+    if (a > b)
+        i = 2 * code[i + 1] - 2;
+})
+
+DEF_CMD(JBE, 21, 1, {
+    int a = 0;
+    int b = 0;
+    StackPop(&cpu.stack, &a);
+    StackPop(&cpu.stack, &b);
+    if (a >= b)
+        i = 2 * code[i + 1] - 2;
+})
+
+DEF_CMD(JE, 22, 1, {
+    int a = 0;
+    int b = 0;
+    StackPop(&cpu.stack, &a);
+    StackPop(&cpu.stack, &b);
+    if (a == b)
+        i = 2 * code[i + 1] - 2;
+})
+
+DEF_CMD(JNE, 23, 1, {
+    int a = 0;
+    int b = 0;
+    StackPop(&cpu.stack, &a);
+    StackPop(&cpu.stack, &b);
+    if (a != b)
+        i = 2 * code[i + 1] - 2;
+})
 
 //#endif
 // CPU_COMMANDS_H
