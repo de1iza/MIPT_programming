@@ -101,6 +101,10 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
             code;                               \
 
     while (line_cnt < n_lines) {
+        if (strlen(commands[line_cnt].p_start) == 0) {
+            line_cnt++;
+            continue;
+        }
         char command_name[MAX_COMMAND_SIZE] = "";
 
         strcpy(cur_command, commands[line_cnt].p_start);
@@ -203,6 +207,7 @@ void arrange_labels(line* commands, int n_lines) {
     int cmd_cnt = 0;
 
     for (int i = 0; i < n_lines; i++) {
+        if (strlen(commands[i].p_start) == 0) continue;
         strcpy(cur_command, commands[i].p_start);
         char* command_name = strtok(cur_command, " ");
 
