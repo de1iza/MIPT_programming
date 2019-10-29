@@ -4,6 +4,7 @@
 #include "../stack/stack.h"
 #include "textlib.h"
 #include "enum.h"
+#include "constants.h"
 
 #define DEBUG 1
 
@@ -11,10 +12,12 @@ const int MAX_COMMAND_SIZE = 100;
 const int CPU_STACK_SIZE = 10;
 const int CPU_CALLS_STACK_SIZE = 10;
 
+
 struct cpu_t {
+    elem_t registers[4] = {0};
+    int RAM[RAM_SIZE] = {0};
     stack_t stack = {};
     stack_t calls = {};
-    elem_t registers[4] = {0};
 };
 
 void cpu_init(cpu_t* cpu);

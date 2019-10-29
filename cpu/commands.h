@@ -1,6 +1,12 @@
 //#ifndef CPU_COMMANDS_H
 //#define CPU_COMMANDS_H
 
+#define VALID_RAM_INDEX(index)                                  \
+    if (0 > index || index >= RAM_SIZE) {                       \
+        fprintf(stderr, "Invalid RAM index: %d \n", index);     \
+        abort();                                                \
+    }
+
 DEF_CMD(PUSH, 1, 1, {
     StackPush(&cpu.stack, code[i + 1]);
 })
@@ -37,36 +43,14 @@ DEF_CMD(DIV, 5, 0, {
     StackPush(&cpu.stack, a / b);
 })
 
-DEF_CMD(PUSH_AX, 6, 0, {
-    StackPush(&cpu.stack, cpu.registers[0]);
+DEF_CMD(PUSHREG, 6, 1, {
+    int reg_ind = code[i + 1];
+    StackPush(&cpu.stack, cpu.registers[reg_ind]);
 })
 
-DEF_CMD(PUSH_BX, 7, 0, {
-    StackPush(&cpu.stack, cpu.registers[1]);
-})
-
-DEF_CMD(PUSH_CX, 8, 0, {
-    StackPush(&cpu.stack, cpu.registers[2]);
-})
-
-DEF_CMD(PUSH_DX, 9, 0, {
-    StackPush(&cpu.stack, cpu.registers[3]);
-})
-
-DEF_CMD(POP_AX, 10, 0, {
-    StackPop(&cpu.stack, &cpu.registers[0]);
-})
-
-DEF_CMD(POP_BX, 11, 0, {
-    StackPop(&cpu.stack, &cpu.registers[1]);
-})
-
-DEF_CMD(POP_CX, 12, 0, {
-    StackPop(&cpu.stack, &cpu.registers[2]);
-})
-
-DEF_CMD(POP_DX, 13, 0, {
-    StackPop(&cpu.stack, &cpu.registers[3]);
+DEF_CMD(POPREG, 10, 1, {
+    int reg_ind = code[i + 1];
+    StackPop(&cpu.stack, &cpu.registers[reg_ind]);
 })
 
 DEF_CMD(IN, 14, 0, {
@@ -151,6 +135,28 @@ DEF_CMD(CALL, 24, 1, {
 
 DEF_CMD(RET, 25, 0, {
     StackPop(&cpu.calls, &i);
+})
+
+DEF_CMD(PUSHRAM, 26, 1, {
+    int index = code[i + 1];
+    VALID_RAM_INDEX(index);
+    int val = cpu.RAM[index];
+    StackPush(&cpu.stack, val);
+    /*for (int i = 0; i < RAM_SIZE; i++) {
+        printf("%d ", cpu.RAM[i]);
+    }*/
+
+})
+
+DEF_CMD(POPRAM, 27, 1, {
+    int val = 0;
+    int index = code[i + 1];
+    VALID_RAM_INDEX(index);
+    StackPop(&cpu.stack, &val);
+    cpu.RAM[index] = val;
+    /*for (int i = 0; i < RAM_SIZE; i++) {
+        printf("%d ", cpu.RAM[i]);
+    }*/
 })
 
 //#endif

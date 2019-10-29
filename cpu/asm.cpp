@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <ctype.h>
 #include "textlib.h"
+#include "constants.h"
 
 const int MAX_COMMAND_SIZE = 100;
 const int MAX_LABELS_COUNT = 100;
@@ -23,6 +25,9 @@ bool islabel(char* command);
 void make_label_name(char* label);
 void arrange_labels(line* commands, int n_cmds);
 int get_label_value(char* label_name);
+void tolower_str(char* str);
+bool isreg(char* arg);
+int get_reg_code(char* reg);
 
 int main() {
     const char* INPUT_FILE = "code.txt";
@@ -94,12 +99,6 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
         printf("!! %s %d\n", labels[i].name, labels[i].value);
     }
 
-    printf("N_CMDS %d\n", n_lines);
-
-    //#define DEF_CMD(name, num, args, code)      \
-        if (strcmp(command_name, #name) == 0)   \
-            code;                               \
-
     while (line_cnt < n_lines) {
         if (strlen(commands[line_cnt].p_start) == 0) {
             line_cnt++;
@@ -129,16 +128,24 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
             int arg = strtol(pch, &end, 10);
 
             if (pch == end) {
-                //cmd with string arg (NOW: only JUMP!)
+                //cmd with string arg (jump  or pushr/popr)
 
-                //strcat(command_name, " ");
-                //strcat(command_name, pch);
+                int jmp_val = 0;
+                if ((jmp_val = get_label_value(pch)) > -1) {
+                    buf[2 * buf_cnt + 1] = jmp_val;
+                }
+                else {
+                    tolower_str(pch);
+                    if (isreg(pch)) {
+                        buf[2 * buf_cnt + 1] = get_reg_code(pch);
+                    }
+                    else {
+                        fprintf(stderr, "Unknown label: %s\n", pch);
+                        abort();
+                    }
 
+                }
 
-                int jmp_val = get_label_value(pch);
-                assert(jmp_val);
-
-                buf[2 * buf_cnt + 1] = jmp_val;
             }
             else {
                 // cmd with num arg
@@ -147,7 +154,6 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
             }
 
         }
-
 
 
         if (false) ;
@@ -237,4 +243,16 @@ int get_label_value(char* label_name) {
         }
     }
     return -1;
+}
+
+void tolower_str(char* str) {
+    for ( ; *str; ++str) *str = tolower(*str);;
+}
+
+bool isreg(char* arg) {
+    return (strlen(arg) == 2 && arg[1] == 'x' && 0 <= (arg[0] - 'a') && (arg[0] - 'a') <= 3);
+}
+
+int get_reg_code(char* reg) {
+    return reg[0] - 'a';
 }

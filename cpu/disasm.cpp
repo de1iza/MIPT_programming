@@ -4,6 +4,7 @@
 #include <string.h>
 #include "enum.h"
 #include "textlib.h"
+#include "constants.h"
 
 void buf_to_code(const char* filename, int* buf, int n_cmds);
 int read_binary(const char* filename, int** buf);
