@@ -63,6 +63,10 @@ void buf_to_code(const char* filename, int* buf, int n_cmds) {
                 fprintf(fp, "[%d]", buf[3 * i + 2]);                         \
             else if (arg_type == PARAM_RAM_REG)                              \
                 fprintf(fp, "[%cX]", get_reg_name(buf[3 * i + 2]));          \
+            else if (arg_type == PARAM_VRAM_IMMED)                           \
+                fprintf(fp, "{%d}", buf[3 * i + 2]);                         \
+            else if (arg_type == PARAM_VRAM_REG)                             \
+                fprintf(fp, "{%cX}", get_reg_name(buf[3 * i + 2]));          \
             else if (arg_type)                                               \
                 fprintf(fp, "%d", buf[3 * i + 2]);                           \
             fprintf(fp, "\n");                                               \

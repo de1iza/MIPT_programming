@@ -191,13 +191,16 @@ DEF_CMD(POP, PARAM_VRAM_IMMED, {
     cpu.VRAM[index] = val;
 })
 
-//#define DEF_COLOUR(name, esc_string) case COLOUR_##name: printf(esc_string); break;
+#define DEF_COLOUR(name, esc_string) case COLOUR_##name: printf(esc_string); break;
 
 DEF_CMD(DRAW, NO_PARAMS, {
 
     for (int k = 0; k < VRAM_HEIGHT; k++) {
         for (int j = 0; j < VRAM_WIDTH; j++) {
-            switch(cpu.VRAM[k * VRAM_WIDTH + j]) {
+
+
+            int pixel = cpu.VRAM[k * VRAM_WIDTH + j];
+            switch(pixel) {
                 case 0: printf("\033[40m \033[0m"); break;
                 case 1: printf("\033[41m \033[0m"); break;
                 case 2: printf("\033[42m \033[0m"); break;
@@ -207,7 +210,7 @@ DEF_CMD(DRAW, NO_PARAMS, {
                 case 6: printf("\033[46m \033[0m"); break;
                 case 7: printf("\033[47m \033[0m"); break;
 
-                default: fprintf(stderr, "Wrong colour code: %d", code[i + 2]); break;
+                default: fprintf(stderr, "Wrong colour code: %d", pixel); break;
             }
         }
         printf("\n");
@@ -215,7 +218,7 @@ DEF_CMD(DRAW, NO_PARAMS, {
 
 })
 
-
+#undef DEF_COLOUR
 
 //#endif
 // CPU_COMMANDS_H
