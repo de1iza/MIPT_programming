@@ -43,11 +43,11 @@ int read_buf(const char* filename, int** buf) {
 
     *buf = (int*)calloc(file_size, 1);
 
-    int n_cmds = file_size / sizeof(int) / 2;
+    int n_cmds = file_size / sizeof(int) / 3;
 
-    fread(*buf, sizeof(int), 2 * n_cmds, fp);
+    fread(*buf, sizeof(int), 3 * n_cmds, fp);
 
-    for (int i = 0; i < 2 * n_cmds; i++)
+    for (int i = 0; i < 3 * n_cmds; i++)
         printf("%d ", (*buf)[i]);
 
     return n_cmds;
@@ -58,12 +58,12 @@ bool execute(int* code, int n_cmds) {
     cpu_init(&cpu);
 
 
-    #define DEF_CMD(name, num, args, code) case CMD_##name: code; break;
+    #define DEF_CMD(name, arg_type, code) case CMD_##name##arg_type: code; break;
 
     bool end_flag = false;
 
     int i = 0;
-    while (i < 2 * n_cmds) {
+    while (i < 3 * n_cmds) {
         printf("%d\n", code[i]);
         switch(code[i]) {
             #include "commands.h"
@@ -71,7 +71,7 @@ bool execute(int* code, int n_cmds) {
             default: fprintf(stderr, "Wrong command code: %d", code[i]); return false; break;
         }
         if (end_flag) break;
-        i += 2;
+        i += 3;
     }
 
     #undef DEF_CMD

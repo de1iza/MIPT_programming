@@ -8,6 +8,7 @@
 
 void buf_to_code(const char* filename, int* buf, int n_cmds);
 int read_binary(const char* filename, int** buf);
+char get_reg_name(int reg_code);
 
 int main() {
     const char* CODE_FILE = "new_code.txt";
@@ -32,11 +33,11 @@ int read_binary(const char* filename, int** buf) {
     *buf = (int*)calloc(file_size, 1);
     assert(*buf);
 
-    int n_cmds = file_size / sizeof(int) / 2;
+    int n_cmds = file_size / sizeof(int) / 3;
 
-    fread(*buf, sizeof(int), 2 * n_cmds, fp);
+    fread(*buf, sizeof(int), 3 * n_cmds, fp);
 
-    for (int i = 0; i < 2 * n_cmds; i++)
+    for (int i = 0; i < 3 * n_cmds; i++)
         printf("%d ", (*buf)[i]);
 
     fclose(fp);
@@ -44,21 +45,28 @@ int read_binary(const char* filename, int** buf) {
     return n_cmds;
 }
 
+char get_reg_name(int reg_code) {
+    return reg_code + 'A';
+}
+
 void buf_to_code(const char* filename, int* buf, int n_cmds) {
     assert(buf);
 
     FILE* fp = open_file(filename, "w");
 
-    #define DEF_CMD(name, num, args, code) {                \
-        case CMD_##name:                                    \
-            fprintf(fp, "%s ", #name);                      \
-            if (args) fprintf(fp, "%d", buf[2 * i + 1]);    \
-            fprintf(fp, "\n");                              \
-            break;                                          \
+    #define DEF_CMD(name, arg_type, code) {                                  \
+        case CMD_##name##arg_type:                                           \
+            fprintf(fp, "%s ", #name);                                       \
+            if (arg_type == PARAM_REG)                                       \
+                fprintf(fp, "%cX", get_reg_name(buf[3 * i + 2]));            \
+            else if (arg_type)                                               \
+                fprintf(fp, "%d", buf[3 * i + 2]);                           \
+            fprintf(fp, "\n");                                               \
+            break;                                                           \
     }
 
     for (int i = 0; i < n_cmds; i++) {
-        switch (buf[2 * i]) {
+        switch (buf[3 * i]) {
             #include "commands.h"
         }
     }

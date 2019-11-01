@@ -5,6 +5,8 @@
 #include <ctype.h>
 #include "textlib.h"
 #include "constants.h"
+#include "enum.h"
+
 
 const int MAX_COMMAND_SIZE = 100;
 const int MAX_LABELS_COUNT = 100;
@@ -53,7 +55,7 @@ int main() {
 
 
 
-line* read_commands(const char* filename, int* n_cmds) { //TODO bool - return error status?
+line* read_commands(const char* filename, int* n_cmds) { 
     FILE *fp = open_file(filename, "r");
 
     assert(fp != NULL);
@@ -74,7 +76,7 @@ line* read_commands(const char* filename, int* n_cmds) { //TODO bool - return er
 }
 
 int* code_to_buf(line* commands, int n_lines, int* buf_size) {
-    int* buf = (int*)calloc(n_lines,  2 * sizeof(int));
+    int* buf = (int*)calloc(n_lines,  3 * sizeof(int));
 
     assert(commands);
     assert(buf);
@@ -86,10 +88,11 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
     int value = 0;
     char reg[10] = "";
 
-    #define DEF_CMD(name, num, args, code)          \
-        else if (strcmp(command_name, #name) == 0)  \
-            buf[2 * buf_cnt] = num;
-
+    #define DEF_CMD(name, arg_type, code)                                           \
+        else if (strcmp(command_name, #name) == 0 && arg_type == param) {           \
+            buf[3 * buf_cnt] = CMD_##name##arg_type;                                \
+            buf[3 * buf_cnt + 1] = arg_type;                                        \
+        }
 
     int cmd_cnt = 0, buf_cnt = 0, line_cnt = 0;
 
@@ -98,6 +101,8 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
     for (int i = 0; i < n_labels; i++) {
         printf("!! %s %d\n", labels[i].name, labels[i].value);
     }
+
+    Param_t param = NO_PARAMS;
 
     while (line_cnt < n_lines) {
         if (strlen(commands[line_cnt].p_start) == 0) {
@@ -121,7 +126,8 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
                 line_cnt++;
                 continue;
             }
-            buf[2 * buf_cnt + 1] = -1;
+            param = NO_PARAMS;
+            buf[3 * buf_cnt + 2] = -1;
         }
         else {
             // cmd with arg
@@ -132,12 +138,15 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
 
                 int jmp_val = 0;
                 if ((jmp_val = get_label_value(pch)) > -1) {
-                    buf[2 * buf_cnt + 1] = jmp_val;
+                    param = LABEL;
+                    buf[3 * buf_cnt + 2] = jmp_val;
                 }
                 else {
                     tolower_str(pch);
                     if (isreg(pch)) {
-                        buf[2 * buf_cnt + 1] = get_reg_code(pch);
+                        param = PARAM_REG;
+                        printf("REG %s %d\n", pch, param);
+                        buf[3 * buf_cnt + 2] = get_reg_code(pch);
                     }
                     else {
                         fprintf(stderr, "Unknown label: %s\n", pch);
@@ -149,8 +158,8 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
             }
             else {
                 // cmd with num arg
-
-                buf[2 * buf_cnt + 1] = arg;
+                param = PARAM_IMMED;
+                buf[3 * buf_cnt + 2] = arg;
             }
 
         }
@@ -171,8 +180,8 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
     assert(buf_cnt);
     assert(line_cnt);
 
-    for (int i = 0; i < 2 * buf_cnt; i += 2) {
-        printf("%d %d\n", buf[i], buf[i+1]);
+    for (int i = 0; i < 3 * buf_cnt; i += 3) {
+        printf("%d %d %d\n", buf[i], buf[i+1], buf[i+2]);
     }
 
     #undef DEF_CMD
@@ -186,7 +195,7 @@ bool dump_code(int* buf, int n_lines, const char* filename) {
     assert(fp);
     if (fp == NULL) return false;
 
-    fwrite(buf, 2 * sizeof(int), n_lines, fp);
+    fwrite(buf, 3 * sizeof(int), n_lines, fp);
 
     fclose(fp);
     return true;
