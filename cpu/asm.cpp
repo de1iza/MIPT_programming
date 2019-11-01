@@ -8,9 +8,7 @@
 #include "enum.h"
 
 
-const int MAX_COMMAND_SIZE = 100;
-const int MAX_LABELS_COUNT = 100;
-const int MAX_LABEL_SIZE = 100;
+
 
 struct label {
     char name[MAX_LABEL_SIZE];
