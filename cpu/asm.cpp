@@ -31,6 +31,7 @@ void tolower_str(char* str);
 bool isreg(char* arg);
 int get_reg_code(char* reg);
 bool is_RAM_index(char* arg, int* index);
+bool is_RAM_register(char* arg, int* reg_code);
 
 int main() {
     const char* INPUT_FILE = "code.txt";
@@ -137,7 +138,6 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
             if (pch == end) {
                 //cmd with string arg (jump, push/pop to reg or to ram)
 
-
                 int jmp_val = 0;
                 if ((jmp_val = get_label_value(pch)) > -1) {
                     param = LABEL;
@@ -145,16 +145,23 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
                 }
                 else {
                     tolower_str(pch);
-                    int index = -1;
+                    int index = -1, reg_code = -1;
                     if (isreg(pch)) {
+
                         param = PARAM_REG;
                         buf[3 * buf_cnt + 2] = get_reg_code(pch);
                     }
                     else if (is_RAM_index(pch, &index)) {
                         assert(index > -1);
 
-                        param = PARAM_RAM;
+                        param = PARAM_RAM_IMMED;
                         buf[3 * buf_cnt + 2] = index;
+                    }
+                    else if (is_RAM_register(pch, &reg_code)) {
+                        assert(reg_code > -1);
+
+                        param = PARAM_RAM_REG;
+                        buf[3 * buf_cnt + 2] = reg_code;
                     }
                     else {
                         fprintf(stderr, "Unknown label: %s\n", pch);
@@ -166,6 +173,7 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
             }
             else {
                 // cmd with num arg
+
                 param = PARAM_IMMED;
                 buf[3 * buf_cnt + 2] = arg;
             }
@@ -283,16 +291,35 @@ int get_reg_code(char* reg) {
 
 bool is_RAM_index(char* arg, int* index) {
     assert(arg);
+    assert(index);
 
     if (arg[0] != '[' || arg[strlen(arg) - 1] != ']') return false;
 
-    arg[strlen(arg) - 1] = '\0';
-    arg++;
+    char* copy = NULL;
+    copy = strdup(arg);
+
+    copy[strlen(copy) - 1] = '\0';
+    copy++;
 
     char* end = NULL;
-    int num = strtol(arg, &end, 10);
-    if (end == arg) return false;
+    int num = strtol(copy, &end, 10);
+    if (end == copy) return false;
 
     *index = num;
+
+    //free(copy);
+    return true;
+}
+
+bool is_RAM_register(char* arg, int* reg_code) {
+    assert(arg);
+    assert(reg_code);
+
+    if (strlen(arg) != 4) return false;
+    if (arg[0] != '[' || arg[3] != ']'|| arg[2] != 'x') return false;
+    if (0 > arg[1] - 'a' || arg[1] - 'a' > 3) return false;
+
+
+    *reg_code = arg[1] - 'a';
     return true;
 }

@@ -137,20 +137,36 @@ DEF_CMD(RET, NO_PARAMS, {
     StackPop(&cpu.calls, &i);
 })
 
-DEF_CMD(PUSH, PARAM_RAM, {
+DEF_CMD(PUSH, PARAM_RAM_IMMED, {
     int index = code[i + 2];
     VALID_RAM_INDEX(index);
     int val = cpu.RAM[index];
     StackPush(&cpu.stack, val);
 })
 
-DEF_CMD(POP, PARAM_RAM, {
+DEF_CMD(POP, PARAM_RAM_IMMED, {
     int val = 0;
     int index = code[i + 2];
     VALID_RAM_INDEX(index);
     StackPop(&cpu.stack, &val);
-
     cpu.RAM[index] = val;
+})
+
+DEF_CMD(PUSH, PARAM_RAM_REG, {
+    int reg_ind = code[i + 2];
+    int RAM_ind = cpu.registers[reg_ind];
+    VALID_RAM_INDEX(RAM_ind);
+    int val = cpu.RAM[RAM_ind];
+    StackPush(&cpu.stack, val);
+})
+
+DEF_CMD(POP, PARAM_RAM_REG, {
+    int val = 0;
+    int reg_ind = code[i + 2];
+    int RAM_ind = cpu.registers[reg_ind];
+    VALID_RAM_INDEX(RAM_ind);
+    StackPop(&cpu.stack, &val);
+    cpu.RAM[RAM_ind] = val;
 })
 
 //#endif

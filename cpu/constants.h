@@ -7,7 +7,8 @@ enum Param_t {
     NO_PARAMS,
     PARAM_IMMED,
     PARAM_REG,
-    PARAM_RAM,
+    PARAM_RAM_IMMED,
+    PARAM_RAM_REG,
     LABEL,
 };
 
