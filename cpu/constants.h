@@ -9,7 +9,9 @@ const int N_REGISTERS = 4;
 const int MAX_LABELS_COUNT = 100;
 const int MAX_LABEL_SIZE = 100;
 
-const int VRAM_SIZE = 32 * 64;
+const int VRAM_HEIGHT = 16;
+const int VRAM_WIDTH = 32;
+const int VRAM_SIZE = VRAM_HEIGHT * VRAM_WIDTH;
 
 enum Param_t {
     NO_PARAMS,
@@ -21,6 +23,5 @@ enum Param_t {
     PARAM_VRAM_REG,
     LABEL,
 };
-
 
 #endif //CPU_CONSTANTS_H
