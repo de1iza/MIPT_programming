@@ -8,8 +8,6 @@
 #include "enum.h"
 
 
-
-
 struct label {
     char name[MAX_LABEL_SIZE];
     int value;
@@ -28,8 +26,8 @@ int get_label_value(char* label_name);
 void tolower_str(char* str);
 bool isreg(char* arg);
 int get_reg_code(char* reg);
-bool is_RAM_index(char* arg, int* index);
-bool is_RAM_register(char* arg, int* reg_code);
+bool is_memory_immed(char* arg, int* index, Param_t mem_type);
+bool is_memory_register(char* arg, int* reg_code, Param_t mem_type);
 
 int main() {
     const char* INPUT_FILE = "code.txt";
@@ -85,8 +83,6 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
 
     char cur_command[MAX_COMMAND_SIZE] = "";
 
-    int value = 0;
-    char reg[10] = "";
 
     #define DEF_CMD(name, arg_type, code)                                           \
         else if (strcmp(command_name, #name) == 0 && arg_type == param) {           \
@@ -149,13 +145,25 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
                         param = PARAM_REG;
                         buf[3 * buf_cnt + 2] = get_reg_code(pch);
                     }
-                    else if (is_RAM_index(pch, &index)) {
+                    else if (is_memory_immed(pch, &index, PARAM_RAM_IMMED)) {
                         assert(index > -1);
 
                         param = PARAM_RAM_IMMED;
                         buf[3 * buf_cnt + 2] = index;
                     }
-                    else if (is_RAM_register(pch, &reg_code)) {
+                    else if (is_memory_register(pch, &reg_code, PARAM_RAM_REG)) {
+                        assert(reg_code > -1);
+
+                        param = PARAM_RAM_REG;
+                        buf[3 * buf_cnt + 2] = reg_code;
+                    }
+                    else if (is_memory_immed(pch, &index, PARAM_VRAM_IMMED)) {
+                        assert(index > -1);
+
+                        param = PARAM_VRAM_IMMED;
+                        buf[3 * buf_cnt + 2] = index;
+                    }
+                    else if (is_memory_register(pch, &reg_code, PARAM_VRAM_REG)) {
                         assert(reg_code > -1);
 
                         param = PARAM_RAM_REG;
@@ -287,11 +295,24 @@ int get_reg_code(char* reg) {
     return reg[0] - 'a';
 }
 
-bool is_RAM_index(char* arg, int* index) {
+
+bool is_memory_immed(char* arg, int* index, Param_t mem_type) {
     assert(arg);
     assert(index);
 
-    if (arg[0] != '[' || arg[strlen(arg) - 1] != ']') return false;
+    char ldelim = '-', rdelim = '-';
+
+    if (mem_type == PARAM_VRAM_IMMED) {
+        ldelim = '{';
+        rdelim = '}';
+    }
+    else if (mem_type == PARAM_RAM_IMMED) {
+        ldelim = '[';
+        rdelim = ']';
+    }
+    else return false;
+
+    if (arg[0] != ldelim || arg[strlen(arg) - 1] != rdelim) return false;
 
     char* copy = NULL;
     copy = strdup(arg);
@@ -309,12 +330,25 @@ bool is_RAM_index(char* arg, int* index) {
     return true;
 }
 
-bool is_RAM_register(char* arg, int* reg_code) {
+bool is_memory_register(char* arg, int* reg_code, Param_t mem_type) {
     assert(arg);
     assert(reg_code);
 
     if (strlen(arg) != 4) return false;
-    if (arg[0] != '[' || arg[3] != ']'|| arg[2] != 'x') return false;
+
+    char ldelim = '-', rdelim = '-';
+
+    if (mem_type == PARAM_VRAM_REG) {
+        ldelim = '{';
+        rdelim = '}';
+    }
+    else if (mem_type == PARAM_RAM_REG) {
+        ldelim = '[';
+        rdelim = ']';
+    }
+    else return false;
+
+    if (arg[0] != ldelim || arg[3] != rdelim || arg[2] != 'x') return false;
     if (0 > arg[1] - 'a' || arg[1] - 'a' > 3) return false;
 
 

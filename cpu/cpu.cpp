@@ -12,7 +12,7 @@
 struct cpu_t {
     elem_t registers[N_REGISTERS] = {0};
     int RAM[RAM_SIZE] = {0};
-
+    int VRAM[VRAM_SIZE] = {0};
     stack_t stack = {};
     stack_t calls = {};
 };

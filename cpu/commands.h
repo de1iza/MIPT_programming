@@ -7,6 +7,12 @@
         abort();                                                \
     }
 
+#define VALID_VRAM_INDEX(index)                                  \
+    if (0 > index || index >= VRAM_SIZE) {                       \
+        fprintf(stderr, "Invalid VRAM index: %d \n", index);     \
+        abort();                                                 \
+    }
+
 DEF_CMD(PUSH, PARAM_IMMED, {
     StackPush(&cpu.stack, code[i + 2]);
 })
@@ -167,6 +173,21 @@ DEF_CMD(POP, PARAM_RAM_REG, {
     VALID_RAM_INDEX(RAM_ind);
     StackPop(&cpu.stack, &val);
     cpu.RAM[RAM_ind] = val;
+})
+
+DEF_CMD(PUSH, PARAM_VRAM_IMMED, {
+    int index = code[i + 2];
+    VALID_VRAM_INDEX(index);
+    int val = cpu.VRAM[index];
+    StackPush(&cpu.stack, val);
+})
+
+DEF_CMD(POP, PARAM_VRAM_IMMED, {
+    int val = 0;
+    int index = code[i + 2];
+    VALID_VRAM_INDEX(index);
+    StackPop(&cpu.stack, &val);
+    cpu.VRAM[index] = val;
 })
 
 //#endif
