@@ -59,6 +59,8 @@ void buf_to_code(const char* filename, int* buf, int n_cmds) {
             fprintf(fp, "%s ", #name);                                       \
             if (arg_type == PARAM_REG)                                       \
                 fprintf(fp, "%cX", get_reg_name(buf[3 * i + 2]));            \
+            else if (arg_type == PARAM_RAM)                                  \
+                fprintf(fp, "[%d]", buf[3 * i + 2]);                         \
             else if (arg_type)                                               \
                 fprintf(fp, "%d", buf[3 * i + 2]);                           \
             fprintf(fp, "\n");                                               \

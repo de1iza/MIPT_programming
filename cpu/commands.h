@@ -137,26 +137,20 @@ DEF_CMD(RET, NO_PARAMS, {
     StackPop(&cpu.calls, &i);
 })
 
-DEF_CMD(PUSHRAM, 1, {
+DEF_CMD(PUSH, PARAM_RAM, {
     int index = code[i + 2];
     VALID_RAM_INDEX(index);
     int val = cpu.RAM[index];
     StackPush(&cpu.stack, val);
-    /*for (int i = 0; i < RAM_SIZE; i++) {
-        printf("%d ", cpu.RAM[i]);
-    }*/
-
 })
 
-DEF_CMD(POPRAM, 1, {
+DEF_CMD(POP, PARAM_RAM, {
     int val = 0;
     int index = code[i + 2];
     VALID_RAM_INDEX(index);
     StackPop(&cpu.stack, &val);
+
     cpu.RAM[index] = val;
-    /*for (int i = 0; i < RAM_SIZE; i++) {
-        printf("%d ", cpu.RAM[i]);
-    }*/
 })
 
 //#endif

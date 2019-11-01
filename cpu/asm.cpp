@@ -30,6 +30,7 @@ int get_label_value(char* label_name);
 void tolower_str(char* str);
 bool isreg(char* arg);
 int get_reg_code(char* reg);
+bool is_RAM_index(char* arg, int* index);
 
 int main() {
     const char* INPUT_FILE = "code.txt";
@@ -134,7 +135,8 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
             int arg = strtol(pch, &end, 10);
 
             if (pch == end) {
-                //cmd with string arg (jump  or pushr/popr)
+                //cmd with string arg (jump, push/pop to reg or to ram)
+
 
                 int jmp_val = 0;
                 if ((jmp_val = get_label_value(pch)) > -1) {
@@ -143,10 +145,16 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
                 }
                 else {
                     tolower_str(pch);
+                    int index = -1;
                     if (isreg(pch)) {
                         param = PARAM_REG;
-                        printf("REG %s %d\n", pch, param);
                         buf[3 * buf_cnt + 2] = get_reg_code(pch);
+                    }
+                    else if (is_RAM_index(pch, &index)) {
+                        assert(index > -1);
+
+                        param = PARAM_RAM;
+                        buf[3 * buf_cnt + 2] = index;
                     }
                     else {
                         fprintf(stderr, "Unknown label: %s\n", pch);
@@ -196,6 +204,7 @@ bool dump_code(int* buf, int n_lines, const char* filename) {
     if (fp == NULL) return false;
 
     fwrite(buf, 3 * sizeof(int), n_lines, fp);
+
 
     fclose(fp);
     return true;
@@ -255,13 +264,35 @@ int get_label_value(char* label_name) {
 }
 
 void tolower_str(char* str) {
+    assert(str);
+
     for ( ; *str; ++str) *str = tolower(*str);;
 }
 
 bool isreg(char* arg) {
+    assert(arg);
+
     return (strlen(arg) == 2 && arg[1] == 'x' && 0 <= (arg[0] - 'a') && (arg[0] - 'a') <= 3);
 }
 
 int get_reg_code(char* reg) {
+    assert(reg);
+
     return reg[0] - 'a';
+}
+
+bool is_RAM_index(char* arg, int* index) {
+    assert(arg);
+
+    if (arg[0] != '[' || arg[strlen(arg) - 1] != ']') return false;
+
+    arg[strlen(arg) - 1] = '\0';
+    arg++;
+
+    char* end = NULL;
+    int num = strtol(arg, &end, 10);
+    if (end == arg) return false;
+
+    *index = num;
+    return true;
 }

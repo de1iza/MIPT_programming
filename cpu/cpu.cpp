@@ -76,6 +76,9 @@ bool execute(int* code, int n_cmds) {
 
     #undef DEF_CMD
 
+    for (int i = 0; i < 20; i++)
+        printf("%d ", cpu.RAM[i]);
+
     return true;
 }
 
