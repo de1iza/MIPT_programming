@@ -1,7 +1,7 @@
 #ifndef CPU_CONSTANTS_H
 #define CPU_CONSTANTS_H
 
-const char* INPUT_FILE = "code.txt";
+const char* INPUT_FILE = "fpmi.txt";
 const char* BIN_FILE = "code.bin";
 const char* OUTPUT_FILE = "new_code.txt";
 

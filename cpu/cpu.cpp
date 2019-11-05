@@ -21,6 +21,7 @@ struct cpu_t {
 void cpu_init(cpu_t* cpu);
 int read_buf(const char* filename, int** buf);
 bool execute(int* code, int n_cmds);
+void draw_pixel(int pixel);
 
 int main() {
     int* buf = NULL;
@@ -45,8 +46,6 @@ int read_buf(const char* filename, int** buf) {
 
     return n_cmds;
 }
-
-#define DEF_COLOUR(name, esc_string) case COLOUR_##name: printf(esc_string); break;
 
 bool execute(int* code, int n_cmds) {
     static cpu_t cpu = {};
@@ -73,12 +72,23 @@ bool execute(int* code, int n_cmds) {
     return true;
 }
 
-#undef DEF_COLOUR
-
 void cpu_init(cpu_t* cpu) {
     STACK_INIT(cpu->stack, CPU_STACK_SIZE);
     STACK_INIT(cpu->calls, CPU_CALLS_STACK_SIZE);
 }
 
+#define DEF_COLOUR(name, esc_string) case COLOUR_##name: printf(esc_string); break;
 
+void draw_pixel(int pixel) {
+    switch (pixel) {
+        #include "colours.h"
+
+        default:
+            fprintf(stderr, "Wrong colour code: %d", pixel);
+            break;
+    }
+
+}
+
+#undef DEF_COLOUR
 

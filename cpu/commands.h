@@ -194,34 +194,13 @@ DEF_CMD(POP, PARAM_VRAM_IMMED, {
 
 
 DEF_CMD(DRAW, NO_PARAMS, {
-
-    #define DEF_COLOUR(name, esc_string) case COLOUR_##name: printf(esc_string); break;
-
     for (int k = 0; k < VRAM_HEIGHT; k++) {
         for (int j = 0; j < VRAM_WIDTH; j++) {
-
             int pixel = cpu.VRAM[k * VRAM_WIDTH + j];
-            switch(pixel) {
-                case COLOUR_WHITE: printf("\033[40m \033[0m"); break;
-                case COLOUR_RED: printf("\033[41m \033[0m"); break;
-                case COLOUR_GREEN: printf("\033[42m \033[0m"); break;
-                case COLOUR_YELLOW: printf("\033[43m \033[0m"); break;
-                case COLOUR_BLUE: printf("\033[44m \033[0m"); break;
-                case COLOUR_MAGENTA: printf("\033[45m \033[0m"); break;
-                case COLOUR_CYAN: printf("\033[46m \033[0m"); break;
-                case COLOUR_BLACK: printf("\033[107m \033[0m"); break;
-                case COLOUR_BRIGHT_RED: printf("\033[101m \033[0m"); break;
-                case COLOUR_BRIGHT_GREEN: printf("\033[102m \033[0m"); break;
-                case COLOUR_BRIGHT_YELLOW: printf("\033[103m \033[0m"); break;
-                case COLOUR_BRIGHT_BLUE: printf("\033[104m \033[0m"); break;
-
-                default: fprintf(stderr, "Wrong colour code: %d", pixel); break;
-            }
+            draw_pixel(pixel);
         }
         printf("\n");
     }
-
-    #undef DEF_COLOUR
 })
 
 //
