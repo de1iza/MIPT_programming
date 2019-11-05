@@ -6,7 +6,7 @@
 #include "textlib.h"
 #include "constants.h"
 #include "enum.h"
-
+#include "colours_enum.h"
 
 
 struct label {
@@ -31,9 +31,6 @@ bool is_memory_immed(char* arg, int* index, Param_t mem_type);
 bool is_memory_register(char* arg, int* reg_code, Param_t mem_type);
 
 int main() {
-    const char* INPUT_FILE = "code.txt";
-    const char* OUTPUT_FILE = "bin_data";
-
     line* commands = NULL;
     int n_cmds = 0;
 
@@ -47,7 +44,7 @@ int main() {
 
     assert(buf);
 
-    dump_code(buf, buf_size, OUTPUT_FILE);
+    dump_code(buf, buf_size, BIN_FILE);
 
     return 0;
 }
@@ -95,10 +92,6 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
 
     arrange_labels(commands, n_lines);
 
-    for (int i = 0; i < n_labels; i++) {
-        printf("!! %s %d\n", labels[i].name, labels[i].value);
-    }
-
     Param_t param = NO_PARAMS;
 
     while (line_cnt < n_lines) {
@@ -107,11 +100,9 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
             continue;
         }
         char command_name[MAX_COMMAND_SIZE] = "";
-
         strcpy(cur_command, commands[line_cnt].p_start);
 
         char* pch = strtok(cur_command, " ");
-
         strcpy(command_name, pch);
 
         pch = strtok(NULL, " ");
@@ -219,7 +210,6 @@ bool dump_code(int* buf, int n_lines, const char* filename) {
     if (fp == NULL) return false;
 
     fwrite(buf, 3 * sizeof(int), n_lines, fp);
-
 
     fclose(fp);
     return true;
@@ -330,6 +320,7 @@ bool is_memory_immed(char* arg, int* index, Param_t mem_type) {
     //free(copy);
     return true;
 }
+
 
 bool is_memory_register(char* arg, int* reg_code, Param_t mem_type) {
     assert(arg);

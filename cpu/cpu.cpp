@@ -12,7 +12,7 @@
 
 struct cpu_t {
     elem_t registers[N_REGISTERS] = {0};
-    int RAM[RAM_SIZE] = {0};
+    elem_t RAM[RAM_SIZE] = {0};
     int VRAM[VRAM_SIZE] = {0};
     stack_t stack = {};
     stack_t calls = {};
@@ -23,10 +23,8 @@ int read_buf(const char* filename, int** buf);
 bool execute(int* code, int n_cmds);
 
 int main() {
-    const char* CODE_FILE = "bin_data";
-
     int* buf = NULL;
-    int n_cmds = read_buf(CODE_FILE, &buf);
+    int n_cmds = read_buf(BIN_FILE, &buf);
     assert(buf);
 
     execute(buf, n_cmds);
@@ -45,9 +43,6 @@ int read_buf(const char* filename, int** buf) {
 
     fread(*buf, sizeof(int), 3 * n_cmds, fp);
 
-    //for (int i = 0; i < 3 * n_cmds; i++)
-    //    printf("%d ", (*buf)[i]);
-
     return n_cmds;
 }
 
@@ -64,7 +59,6 @@ bool execute(int* code, int n_cmds) {
 
     int i = 0;
     while (i < 3 * n_cmds) {
-       // printf("%d\n", code[i]);
         switch(code[i]) {
             #include "commands.h"
 
@@ -75,9 +69,6 @@ bool execute(int* code, int n_cmds) {
     }
 
     #undef DEF_CMD
-
-    //for (int i = 0; i < VRAM_SIZE; i++)
-     //   printf("%d ", cpu.VRAM[i]);
 
     return true;
 }

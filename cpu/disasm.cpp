@@ -11,14 +11,11 @@ int read_binary(const char* filename, int** buf);
 char get_reg_name(int reg_code);
 
 int main() {
-    const char* CODE_FILE = "new_code.txt";
-    const char* BIN_FILE = "bin_data";
-
     int* buf = NULL;
 
     int n_cmds = read_binary(BIN_FILE, &buf);
 
-    buf_to_code(CODE_FILE, buf, n_cmds);
+    buf_to_code(OUTPUT_FILE, buf, n_cmds);
 
     return 0;
 }
