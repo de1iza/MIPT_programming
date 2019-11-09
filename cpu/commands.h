@@ -47,7 +47,7 @@ DEF_CMD(DIV, NO_PARAMS, {
     int b = 0;
     StackPop(&cpu.stack, &a);
     StackPop(&cpu.stack, &b);
-    StackPush(&cpu.stack, a / b * PRECISION);
+    StackPush(&cpu.stack, double_to_int(double(a) / b));
 })
 
 DEF_CMD(SQRT, NO_PARAMS, {

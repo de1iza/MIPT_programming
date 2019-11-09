@@ -123,7 +123,6 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
             // cmd with arg
 
             double arg = std::strtod(pch, &end);
-            printf("%g\n", arg*1000);
 
             if (pch == end) {
                 //cmd with string arg (jump, push/pop to reg or to (v)ram)
@@ -178,7 +177,6 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
 
                 param = PARAM_IMMED;
                 buf[3 * buf_cnt + 2] = double_to_int(arg);
-                printf("%d\n", double_to_int(arg));
             }
 
         }
@@ -189,7 +187,7 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
         #include "commands.h"
 
         else {
-            fprintf(stderr, "Wrong command: %s", command_name);
+            fprintf(stderr, "Wrong command: %s %d\n", command_name, param);
         }
 
         line_cnt++; buf_cnt++;
@@ -259,6 +257,7 @@ void arrange_labels(line* commands, int n_lines) {
     n_labels = labels_cnt;
 
     #undef DEF_CMD
+    
 }
 
 int get_label_value(char* label_name) {
