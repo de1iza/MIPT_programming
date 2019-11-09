@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <iostream>
+#include <cmath>
 #include <stdlib.h>
 #include <assert.h>
 #include "../stack/stack.h"
@@ -100,5 +100,5 @@ double int_to_double(int val) {
 }
 
 int double_to_int(double val) {
-    return (int) (val * PRECISION);
+    return round(val * PRECISION);
 }

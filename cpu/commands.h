@@ -42,13 +42,18 @@ DEF_CMD(MUL, NO_PARAMS, {
     StackPush(&cpu.stack, a * b / PRECISION);
 })
 
-
 DEF_CMD(DIV, NO_PARAMS, {
     int a = 0;
     int b = 0;
     StackPop(&cpu.stack, &a);
     StackPop(&cpu.stack, &b);
     StackPush(&cpu.stack, a / b * PRECISION);
+})
+
+DEF_CMD(SQRT, NO_PARAMS, {
+    int a = 0;
+    StackPop(&cpu.stack, &a);
+    StackPush(&cpu.stack, double_to_int(sqrt(double(a) / PRECISION)));
 })
 
 DEF_CMD(PUSH, PARAM_REG, {
