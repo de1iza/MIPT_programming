@@ -23,6 +23,8 @@ void cpu_init(cpu_t* cpu);
 int read_buf(const char* filename, int** buf);
 bool execute(int* code, int n_cmds);
 void draw_pixel(int pixel);
+int double_to_int(double val);
+double int_to_double(int val);
 
 int main() {
     int* buf = NULL;
@@ -93,3 +95,10 @@ void draw_pixel(int pixel) {
 
 #undef DEF_COLOUR
 
+double int_to_double(int val) {
+    return (double) val / 1000;
+}
+
+int double_to_int(double val) {
+    return (int) (val * PRECISION);
+}
