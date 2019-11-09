@@ -1,0 +1,100 @@
+IN
+IN
+IN
+
+POP CX
+POP BX
+POP AX
+
+PUSH AX
+PUSH 0
+JE linear_eq
+JMP quad_eq
+END
+
+linear_eq:
+PUSH 0
+PUSH BX
+JNE lin_one_root
+JMP lin_inf_no_roots
+END
+
+quad_eq:
+PUSH 4
+PUSH AX
+MUL
+PUSH CX
+MUL
+PUSH BX
+PUSH BX
+MUL
+SUB
+POP DX
+PUSH DX
+PUSH 0
+JB no_roots
+PUSH DX
+PUSH 0
+JE quad_one_root
+JMP two_roots
+END
+
+lin_inf_no_roots:
+PUSH CX
+PUSH 0
+JNE no_roots
+JMP lin_inf_roots
+END
+
+no_roots:
+END
+
+lin_inf_roots:
+PUSH 88888
+OUT
+END
+
+lin_one_root:
+PUSH BX
+PUSH CX
+PUSH -1
+MUL
+DIV
+OUT
+END
+
+quad_one_root:
+PUSH 2
+PUSH AX
+MUL
+PUSH -1
+PUSH BX
+MUL
+DIV
+OUT
+END
+
+two_roots:
+PUSH 2
+PUSH AX
+MUL
+PUSH -1
+PUSH BX
+MUL
+PUSH DX
+SQRT
+ADD
+DIV
+OUT
+PUSH 2
+PUSH AX
+MUL
+PUSH DX
+SQRT
+PUSH -1
+PUSH BX
+MUL
+SUB
+DIV
+OUT
+END
