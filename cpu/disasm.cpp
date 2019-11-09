@@ -9,6 +9,7 @@
 void buf_to_code(const char* filename, int* buf, int n_cmds);
 int read_binary(const char* filename, int** buf);
 char get_reg_name(int reg_code);
+double int_to_double(int val);
 
 int main() {
     int* buf = NULL;
@@ -65,7 +66,7 @@ void buf_to_code(const char* filename, int* buf, int n_cmds) {
             else if (arg_type == PARAM_VRAM_REG)                             \
                 fprintf(fp, "{%cX}", get_reg_name(buf[3 * i + 2]));          \
             else if (arg_type)                                               \
-                fprintf(fp, "%d", buf[3 * i + 2]);                           \
+                fprintf(fp, "%g", int_to_double(buf[3 * i + 2]));            \
             fprintf(fp, "\n");                                               \
             break;                                                           \
     }
@@ -78,4 +79,8 @@ void buf_to_code(const char* filename, int* buf, int n_cmds) {
 
     #undef DEF_CMD
     fclose(fp);
+}
+
+double int_to_double(int val) {
+    return (double) val / 1000;
 }

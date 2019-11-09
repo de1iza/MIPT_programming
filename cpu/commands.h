@@ -42,6 +42,7 @@ DEF_CMD(MUL, NO_PARAMS, {
     StackPush(&cpu.stack, a * b);
 })
 
+
 DEF_CMD(DIV, NO_PARAMS, {
     int a = 0;
     int b = 0;
@@ -62,15 +63,16 @@ DEF_CMD(POP, PARAM_REG, {
 
 DEF_CMD(IN, NO_PARAMS, {
     int value = 0;
-    printf("Enter integer value: ");
-    scanf("%d", &value);
+    printf("Enter value: ");
+    std::cin >> value;
     StackPush(&cpu.stack, value);
 })
 
 DEF_CMD(OUT, NO_PARAMS, {
     int value = 0;
     StackPop(&cpu.stack, &value);
-    printf("Value from stack: %d\n", value);
+    printf("Value from stack: %d\n");
+    std::cout << value;
 })
 
 DEF_CMD(END, NO_PARAMS, {
@@ -147,7 +149,7 @@ DEF_CMD(RET, NO_PARAMS, {
 DEF_CMD(PUSH, PARAM_RAM_IMMED, {
     int index = code[i + 2];
     VALID_RAM_INDEX(index);
-    int val = cpu.RAM[index];
+    elem_t val = cpu.RAM[index];
     StackPush(&cpu.stack, val);
 })
 
@@ -202,6 +204,8 @@ DEF_CMD(DRAW, NO_PARAMS, {
         printf("\n");
     }
 })
+
+
 
 //
 

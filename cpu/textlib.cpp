@@ -23,7 +23,7 @@ int read_lines(FILE *fp, char** lines) {
 
     fread(*lines, sizeof(char), file_size, fp);
 
-    int chars_count = file_size / sizeof(char) - 1; // TODO!!!!
+    int chars_count = file_size / sizeof(char) - 1;
 
     n_lines = count_lines(*lines, chars_count);
 

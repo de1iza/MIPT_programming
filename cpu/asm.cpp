@@ -29,6 +29,7 @@ bool isreg(char* arg);
 int get_reg_code(char* reg);
 bool is_memory_immed(char* arg, int* index, Param_t mem_type);
 bool is_memory_register(char* arg, int* reg_code, Param_t mem_type);
+int double_to_int(double val);
 
 int main() {
     line* commands = NULL;
@@ -38,6 +39,7 @@ int main() {
 
     assert(commands);
     assert(n_cmds);
+
     int buf_size = 0;
 
     int* buf = code_to_buf(commands, n_cmds, &buf_size);
@@ -119,10 +121,12 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
         }
         else {
             // cmd with arg
-            int arg = strtol(pch, &end, 10);
+
+            double arg = std::strtod(pch, &end);
+            printf("%g\n", arg*1000);
 
             if (pch == end) {
-                //cmd with string arg (jump, push/pop to reg or to ram)
+                //cmd with string arg (jump, push/pop to reg or to (v)ram)
 
                 int jmp_val = 0;
                 if ((jmp_val = get_label_value(pch)) > -1) {
@@ -173,7 +177,8 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
                 // cmd with num arg
 
                 param = PARAM_IMMED;
-                buf[3 * buf_cnt + 2] = arg;
+                buf[3 * buf_cnt + 2] = double_to_int(arg);
+                printf("%d\n", double_to_int(arg));
             }
 
         }
@@ -346,4 +351,8 @@ bool is_memory_register(char* arg, int* reg_code, Param_t mem_type) {
 
     *reg_code = arg[1] - 'a';
     return true;
+}
+
+int double_to_int(double val) {
+    return (int) (val * PRECISION);
 }

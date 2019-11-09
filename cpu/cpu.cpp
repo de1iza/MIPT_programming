@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <iostream>
 #include <stdlib.h>
 #include <assert.h>
 #include "../stack/stack.h"
