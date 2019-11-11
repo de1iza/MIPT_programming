@@ -1,0 +1,42 @@
+IN
+CALL fib
+OUT
+END
+
+fib:
+POP AX
+PUSH AX
+PUSH 0
+JB exit
+PUSH AX
+PUSH 0
+JE ret0
+PUSH AX
+PUSH 1
+JE ret1
+
+PUSH AX
+PUSH 1
+PUSH AX
+SUB
+CALL fib
+POP AX
+POP BX
+PUSH AX
+PUSH 2
+PUSH BX
+SUB
+CALL fib
+ADD
+RET
+
+exit:
+RET
+
+ret0:
+PUSH 0
+RET
+
+ret1:
+PUSH 1
+RET
