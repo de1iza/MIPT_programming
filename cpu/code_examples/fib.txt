@@ -31,7 +31,7 @@ ADD
 RET
 
 exit:
-RET
+END
 
 ret0:
 PUSH 0
