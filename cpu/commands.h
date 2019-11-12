@@ -159,7 +159,7 @@ DEF_CMD(PUSH, PARAM_RAM_IMMED, {
 
 DEF_CMD(POP, PARAM_RAM_IMMED, {
     int val = 0;
-    int index = code[i + 2] / PRECISION;
+    int index = code[i + 2];
     VALID_RAM_INDEX(index);
     StackPop(&cpu->stack, &val);
     cpu->RAM[index] = val;
@@ -191,7 +191,7 @@ DEF_CMD(PUSH, PARAM_VRAM_IMMED, {
 
 DEF_CMD(POP, PARAM_VRAM_IMMED, {
     int val = 0;
-    int index = code[i + 2] / PRECISION;
+    int index = code[i + 2];
     VALID_VRAM_INDEX(index);
     StackPop(&cpu->stack, &val);
     cpu->VRAM[index] = val;
