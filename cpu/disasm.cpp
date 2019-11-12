@@ -9,9 +9,12 @@
 void buf_to_code(const char* filename, int* buf, int n_cmds);
 int read_binary(const char* filename, int** buf);
 char get_reg_name(int reg_code);
-double int_to_double(int val);
+double int_to_double(int val, int precision);
 
 int main() {
+    const char* BIN_FILE = "code.bin";
+    const char* OUTPUT_FILE = "new_code.txt";
+
     int* buf = NULL;
 
     int n_cmds = read_binary(BIN_FILE, &buf);
@@ -50,27 +53,29 @@ char get_reg_name(int reg_code) {
 void buf_to_code(const char* filename, int* buf, int n_cmds) {
     assert(buf);
 
+    const int PRECISION = 1000;
+
     FILE* fp = open_file(filename, "w");
 
-    #define DEF_CMD(name, arg_type, code) {                                  \
-        case CMD_##name##arg_type:                                           \
-            fprintf(fp, "%s ", #name);                                       \
-            if (arg_type == PARAM_REG)                                       \
-                fprintf(fp, "%cX", get_reg_name(buf[3 * i + 2]));            \
-            else if (arg_type == PARAM_RAM_IMMED)                            \
-                fprintf(fp, "[%d]", buf[3 * i + 2]);                         \
-            else if (arg_type == PARAM_RAM_REG)                              \
-                fprintf(fp, "[%cX]", get_reg_name(buf[3 * i + 2]));          \
-            else if (arg_type == PARAM_VRAM_IMMED)                           \
-                fprintf(fp, "{%d}", buf[3 * i + 2]);                         \
-            else if (arg_type == PARAM_VRAM_REG)                             \
-                fprintf(fp, "{%cX}", get_reg_name(buf[3 * i + 2]));          \
-            else if (arg_type == PARAM_IMMED)                                \
-                fprintf(fp, "%g", int_to_double(buf[3 * i + 2]));            \
-            else if (arg_type)                                               \
-                fprintf(fp, "%d", buf[3 * i + 2]);                           \
-            fprintf(fp, "\n");                                               \
-            break;                                                           \
+    #define DEF_CMD(name, arg_type, code) {                                     \
+        case CMD_##name##arg_type:                                              \
+            fprintf(fp, "%s ", #name);                                          \
+            if (arg_type == PARAM_REG)                                          \
+                fprintf(fp, "%cX", get_reg_name(buf[3 * i + 2]));               \
+            else if (arg_type == PARAM_RAM_IMMED)                               \
+                fprintf(fp, "[%d]", buf[3 * i + 2]);                            \
+            else if (arg_type == PARAM_RAM_REG)                                 \
+                fprintf(fp, "[%cX]", get_reg_name(buf[3 * i + 2]));             \
+            else if (arg_type == PARAM_VRAM_IMMED)                              \
+                fprintf(fp, "{%d}", buf[3 * i + 2]);                            \
+            else if (arg_type == PARAM_VRAM_REG)                                \
+                fprintf(fp, "{%cX}", get_reg_name(buf[3 * i + 2]));             \
+            else if (arg_type == PARAM_IMMED)                                   \
+                fprintf(fp, "%g", int_to_double(buf[3 * i + 2], PRECISION));    \
+            else if (arg_type)                                                  \
+                fprintf(fp, "%d", buf[3 * i + 2]);                              \
+            fprintf(fp, "\n");                                                  \
+            break;                                                              \
     }
 
     for (int i = 0; i < n_cmds; i++) {
@@ -83,6 +88,6 @@ void buf_to_code(const char* filename, int* buf, int n_cmds) {
     fclose(fp);
 }
 
-double int_to_double(int val) {
-    return (double) val / 1000;
+double int_to_double(int val, int precision) {
+    return (double) val / precision;
 }

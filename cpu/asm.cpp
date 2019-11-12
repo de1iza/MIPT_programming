@@ -14,8 +14,8 @@ struct label {
     int value;
 };
 
-label labels[MAX_LABELS_COUNT] = {};
-int n_labels = 0;
+static label labels[MAX_LABELS_COUNT] = {};
+static int n_labels = 0;
 
 line* read_commands(const char* filename, int* n_cmds);
 int* code_to_buf(line* commands, int n_lines, int* buf_size);
@@ -29,9 +29,12 @@ bool isreg(char* arg);
 int get_reg_code(char* reg);
 bool is_memory_immed(char* arg, int* index, Param_t mem_type);
 bool is_memory_register(char* arg, int* reg_code, Param_t mem_type);
-int double_to_int(double val);
+int double_to_int(double val, int precision);
 
 int main() {
+    const char* INPUT_FILE = "func.txt";
+    const char* BIN_FILE = "code.bin";
+
     line* commands = NULL;
     int n_cmds = 0;
 
@@ -74,6 +77,8 @@ line* read_commands(const char* filename, int* n_cmds) {
 }
 
 int* code_to_buf(line* commands, int n_lines, int* buf_size) {
+    const int PRECISION = 1000;
+
     int* buf = (int*)calloc(n_lines,  3 * sizeof(int));
 
     assert(commands);
@@ -161,7 +166,7 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
                     else if (is_memory_register(pch, &reg_code, PARAM_VRAM_REG)) {
                         assert(reg_code > -1);
 
-                        param = PARAM_RAM_REG;
+                        param = PARAM_VRAM_REG;
                         buf[3 * buf_cnt + 2] = reg_code;
                     }
                     else {
@@ -176,7 +181,7 @@ int* code_to_buf(line* commands, int n_lines, int* buf_size) {
                 // cmd with num arg
 
                 param = PARAM_IMMED;
-                buf[3 * buf_cnt + 2] = double_to_int(arg);
+                buf[3 * buf_cnt + 2] = double_to_int(arg, PRECISION);
             }
 
         }
@@ -257,7 +262,7 @@ void arrange_labels(line* commands, int n_lines) {
     n_labels = labels_cnt;
 
     #undef DEF_CMD
-    
+
 }
 
 int get_label_value(char* label_name) {
@@ -334,6 +339,8 @@ bool is_memory_register(char* arg, int* reg_code, Param_t mem_type) {
 
     char ldelim = '-', rdelim = '-';
 
+    printf("ARG %s\n", arg);
+
     if (mem_type == PARAM_VRAM_REG) {
         ldelim = '{';
         rdelim = '}';
@@ -352,6 +359,6 @@ bool is_memory_register(char* arg, int* reg_code, Param_t mem_type) {
     return true;
 }
 
-int double_to_int(double val) {
-    return (int) (val * PRECISION);
+int double_to_int(double val, int precision) {
+    return (int) (val * precision);
 }
