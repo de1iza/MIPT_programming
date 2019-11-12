@@ -1,0 +1,206 @@
+PUSH 3
+PUSH 1
+PUSH 10
+PUSH 1
+CALL draw_line
+
+PUSH 10
+PUSH 1
+PUSH 10
+PUSH 9
+CALL draw_line
+
+PUSH 3
+PUSH 9
+PUSH 10
+PUSH 9
+CALL draw_line
+
+PUSH 4
+PUSH 3
+PUSH 10
+PUSH 3
+CALL draw_line
+
+PUSH 4
+PUSH 7
+PUSH 10
+PUSH 7
+CALL draw_line
+
+PUSH 5
+PUSH 5
+PUSH 10
+PUSH 5
+CALL draw_line
+
+PUSH 1
+PUSH 3
+PUSH 1
+PUSH 7
+CALL draw_line
+
+PUSH 3
+PUSH 4
+PUSH 3
+PUSH 6
+CALL draw_line
+
+PUSH 2
+PUSH 2
+CALL draw_dot
+
+PUSH 2
+PUSH 8
+CALL draw_dot
+
+DRAW
+END
+
+
+draw_dot:
+    POP BX
+    POP AX
+    PUSH BX
+    PUSH 24
+    MUL
+    PUSH AX
+    PUSH 2
+    MUL
+    ADD
+    POP CX
+    PUSH 7
+    POP {CX}
+    PUSH CX
+    PUSH 1
+    ADD
+    POP CX
+    PUSH 7
+    POP {CX}
+    RET
+
+draw_line:
+    POP DX
+    POP CX
+    POP BX
+    POP AX
+
+    PUSH AX
+    PUSH CX
+    JE draw_vert_line
+    PUSH BX
+    PUSH DX
+    JE draw_hor_line
+    RET
+
+
+draw_vert_line:
+    PUSH AX
+    PUSH 2
+    MUL
+    POP AX
+
+    PUSH BX
+    PUSH 24
+    MUL
+    PUSH AX
+    ADD
+    POP BX
+
+    PUSH DX
+    PUSH 24
+    MUL
+    PUSH AX
+    ADD
+    POP DX
+
+    PUSH BX
+    PUSH DX
+    CALL comp
+    POP DX
+    POP BX
+
+    CALL draw_vert
+    RET
+
+draw_vert:
+    PUSH BX
+    PUSH DX
+    JA end
+    PUSH 7
+    POP {BX}
+    PUSH 7
+    PUSH BX
+    PUSH 1
+    ADD
+    POP BX
+    POP {BX}
+
+    PUSH BX
+    PUSH 23
+    ADD
+    POP BX
+    CALL draw_vert
+    RET
+
+draw_hor_line:
+    PUSH AX
+    PUSH 2
+    MUL
+    PUSH BX
+    PUSH 24
+    MUL
+    ADD
+    POP AX
+
+    PUSH CX
+    PUSH 2
+    MUL
+    PUSH BX
+    PUSH 24
+    MUL
+    ADD
+    POP CX
+
+    PUSH AX
+    PUSH CX
+    CALL comp
+    POP CX
+    POP AX
+
+    CALL draw_hor
+    RET
+
+draw_hor:
+    PUSH AX
+    PUSH CX
+    JA end
+    PUSH 7
+    POP {AX}
+    PUSH AX
+    PUSH 1
+    ADD
+    POP AX
+    CALL draw_hor
+    RET
+
+
+end:
+    RET
+
+comp:
+    POP [0]
+    POP [1]
+    PUSH [1]
+    PUSH [0]
+    JA swap
+    RET
+
+swap:
+    POP [0]
+    POP [1]
+    PUSH [0]
+    PUSH [1]
+    RET
+
+
