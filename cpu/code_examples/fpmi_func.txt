@@ -120,27 +120,29 @@ draw_vert_line:
     POP DX
     POP BX
 
-    CALL draw_vert
+    CALL draw_vert_loop
     RET
 
-draw_vert:
-    PUSH BX
-    PUSH DX
-    JA end
-    PUSH 7
-    POP {BX}
-    PUSH 7
-    PUSH BX
-    PUSH 1
-    ADD
-    POP BX
-    POP {BX}
+draw_vert_loop:
+    loop1:
+        PUSH 7
+        POP {BX}
+        PUSH 7
+        PUSH BX
+        PUSH 1
+        ADD
+        POP BX
+        POP {BX}
 
-    PUSH BX
-    PUSH 23
-    ADD
-    POP BX
-    CALL draw_vert
+        PUSH BX
+        PUSH 23
+        ADD
+        POP BX
+
+        PUSH BX
+        PUSH DX
+        JBE loop1
+
     RET
 
 draw_hor_line:
@@ -168,20 +170,20 @@ draw_hor_line:
     POP CX
     POP AX
 
-    CALL draw_hor
+    CALL draw_hor_loop
     RET
 
-draw_hor:
-    PUSH AX
-    PUSH CX
-    JA end
-    PUSH 7
-    POP {AX}
-    PUSH AX
-    PUSH 1
-    ADD
-    POP AX
-    CALL draw_hor
+draw_hor_loop:
+    loop2:
+        PUSH 7
+        POP {AX}
+        PUSH AX
+        PUSH 1
+        ADD
+        POP AX
+        PUSH AX
+        PUSH CX
+        JBE loop2
     RET
 
 
