@@ -52,6 +52,7 @@ public:
 
 
 int main() {
+
     TestInsertFirst();
     TestInsertLast();
     TestInsertAfter();
@@ -235,17 +236,24 @@ bool List_t<T>::DeleteElem(const int index) {
         return false;
     }
 
-    if (index == head) head = next[head];
-    else if (index == tail) tail = prev[tail];
-
-    next[prev[index]] = next[index];
-    prev[next[index]] = prev[index];
+    if (index == head) {
+        head = next[head];
+        prev[next[index]] = POISON;
+    }
+    else if (index == tail) {
+        tail = prev[tail];
+        next[prev[index]] = POISON;
+    }
+    else {
+        next[prev[index]] = next[index];
+        prev[next[index]] = prev[index];
+    }
 
     data[index] = POISON;
     next[index] = next_free;
     prev[index] = POISON;
-    next_free = index;
 
+    next_free = index;
     size--;
     return true;
 }
