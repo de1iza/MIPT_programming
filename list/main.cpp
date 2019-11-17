@@ -39,6 +39,7 @@ public:
     T* GetTailP();
     T* GetAfterP(const int index);
     T* GetBeforeP(const int index);
+    T GetElemByPosition(const int position);
 };
 
 int main() {
@@ -66,8 +67,7 @@ int main() {
     list.InsertLast(44);
     list.ShowList();
 
-    list.Sort();
-    list.ShowList();
+    printf("RESULT %d\n", list.GetElemByPosition(5));
 
     list.Dump("dump.dot");
 
@@ -402,6 +402,30 @@ T *List_t<T>::GetBeforeP(const int index) {
     }
     else
         return &prev[index];
+}
+
+template<typename T>
+T List_t<T>::GetElemByPosition(const int position) {
+    if (position >= size || position < 0) {
+        fprintf(stderr, "List doesn't contain element on this position\n");
+        return POISON;
+    }
+
+    if (position > size / 2) {
+        int i = size - position - 1;
+        int cur_ind = tail;
+        while (i--) {
+            cur_ind = prev[cur_ind];
+        }
+        return data[cur_ind];
+    }
+
+    int i = position;
+    int cur_ind = head;
+    while (i--) {
+        cur_ind = next[cur_ind];
+    }
+    return data[cur_ind];
 }
 
 
