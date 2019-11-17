@@ -35,6 +35,10 @@ public:
     void Dump(const char* filename);
     size_t GetSize();
     void ShowList();
+    T* GetHeadP();
+    T* GetTailP();
+    T* GetAfterP(const int index);
+    T* GetBeforeP(const int index);
 };
 
 int main() {
@@ -62,6 +66,8 @@ int main() {
     list.InsertLast(44);
     list.ShowList();
 
+    list.Sort();
+    list.ShowList();
 
     list.Dump("dump.dot");
 
@@ -101,7 +107,7 @@ bool List_t<T>::InsertAfter(const int index, const T value) {
         return false;
     }
 
-    if (prev[index] == POISON && next[index] == POISON) { //TODO check if elem in list differently
+    if (prev[index] == POISON && index != head) {
         fprintf(stderr, "This element is not in the list\n");
         return false;
     }
@@ -164,7 +170,6 @@ bool List_t<T>::InsertFirst(const T value) {
 
 
     head = pos;
-
 
     size++;
     return true;
@@ -232,14 +237,15 @@ bool List_t<T>::IndexIsValid(const int index) {
 
 template<typename T>
 bool List_t<T>::DeleteElem(const int index) {
-    if (prev[index] == POISON) {
-        fprintf(stderr, "This element is not in the list\n");
-        return false;
-    }
     if (!IndexIsValid(index)) {
         fprintf(stderr, "Index out of range\n");
         return false;
     }
+    if (prev[index] == POISON &&  index != head) {
+        fprintf(stderr, "This element is not in the list\n");
+        return false;
+    }
+
     if (index == head) head = next[head];
     else if (index == tail) tail = prev[tail];
 
@@ -345,5 +351,58 @@ template<typename T>
 bool List_t<T>::isEmpty() {
     return size == 0;
 }
+
+template<typename T>
+T *List_t<T>::GetHeadP() {
+    if (isEmpty())
+        return nullptr;
+    else {
+        return &data[head];
+    }
+}
+
+template<typename T>
+T *List_t<T>::GetTailP() {
+    if (isEmpty())
+        return nullptr;
+    else {
+        return &data[tail];
+    }
+}
+
+template<typename T>
+T *List_t<T>::GetAfterP(const int index) {
+    if (!IndexIsValid(index)) {
+        fprintf(stderr, "Index out of range\n");
+        return nullptr;
+    }
+    if (prev[index] == POISON &&  index != head) {
+        fprintf(stderr, "This element is not in the list\n");
+        return nullptr;
+    }
+    if (index == tail) {
+        return nullptr;
+    }
+    else
+        return &next[index];
+}
+
+template<typename T>
+T *List_t<T>::GetBeforeP(const int index) {
+    if (!IndexIsValid(index)) {
+        fprintf(stderr, "Index out of range\n");
+        return nullptr;
+    }
+    if (prev[index] == POISON &&  index != head) {
+        fprintf(stderr, "This element is not in the list\n");
+        return nullptr;
+    }
+    if (index == head) {
+        return nullptr;
+    }
+    else
+        return &prev[index];
+}
+
 
 
