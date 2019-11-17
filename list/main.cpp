@@ -6,6 +6,14 @@
 
 const int POISON = 13377331;
 
+bool TestInsertFirst();
+bool TestInsertLast();
+bool TestInsertAfter();
+bool TestInsertBefore();
+bool TestGetElemByPos();
+bool TestDeleteElem();
+bool TestDump();
+
 template <typename T>
 class List_t {
 private:
@@ -32,7 +40,7 @@ public:
     T GetBefore(const int index);
     bool DeleteElem(const int index);
     bool ClearList();
-    void Dump(const char* filename);
+    void Dump(const char* filename = "dump.dot");
     size_t GetSize();
     void ShowList();
     T* GetHeadP();
@@ -42,34 +50,15 @@ public:
     T GetElemByPosition(const int position);
 };
 
+
 int main() {
-    List_t<int> list = List_t<int>(10);
-    list.ShowList();
-
-    list.InsertLast(5);
-    list.ShowList();
-
-    list.InsertFirst(3);
-    list.ShowList();
-
-    list.InsertLast(22);
-    list.ShowList();
-
-    list.InsertBefore(1, 179);
-    list.ShowList();
-
-    list.InsertLast(111);
-    list.ShowList();
-
-    list.DeleteElem(1);
-    list.ShowList();
-
-    list.InsertLast(44);
-    list.ShowList();
-
-    printf("RESULT %d\n", list.GetElemByPosition(5));
-
-    list.Dump("dump.dot");
+    TestInsertFirst();
+    TestInsertLast();
+    TestInsertAfter();
+    TestInsertBefore();
+    TestGetElemByPos();
+    TestDeleteElem();
+    TestDump();
 
     return 0;
 }
@@ -216,18 +205,18 @@ template<typename T>
 T List_t<T>::GetAfter(const int index) {
     if (!IndexIsValid(index)) {
         fprintf(stderr, "Index out of range\n");
-        return;                                     // TODO not ok????
+        return POISON;
     }
-    return next[index];
+    return data[next[index]];
 }
 
 template<typename T>
 T List_t<T>::GetBefore(const int index) {
     if (!IndexIsValid(index)) {
         fprintf(stderr, "Index out of range\n");
-        return;
+        return POISON;
     }
-    return prev[index];
+    return data[prev[index]];
 }
 
 template<typename T>
@@ -262,7 +251,7 @@ bool List_t<T>::DeleteElem(const int index) {
 }
 
 template<typename T>
-void List_t<T>::Dump(const char *filename) {
+void List_t<T>::Dump(const char* filename) {
     remove("dump.png");
 
     FILE* file = fopen(filename, "w");
@@ -428,5 +417,107 @@ T List_t<T>::GetElemByPosition(const int position) {
     return data[cur_ind];
 }
 
+bool TestInsertFirst() {
+    List_t<int> list = List_t<int>(10);
+    list.InsertFirst(33);
+    int size = -1;
+    if ((size = list.GetSize()) == 1) {
+        int res = 0;
+        if ((res = list.GetHead())== 33) {
+            printf("TestInsertFirst passed\n");
+            return true;
+        }
+        printf("TestInsertFirst failed. Wrong head element: Expected 33, got %d\n", res);
+        return false;
+    }
+    printf("TestInsertFirst failed. Wrong size: Expected 1, got %d\n", size);
+    return false;
+}
 
+bool TestInsertLast() {
+    List_t<int> list = List_t<int>(10);
+    list.InsertFirst(33);
+    list.InsertLast(44);
 
+    int res = 0;
+    if ((res = list.GetTail()) == 44) {
+        printf("TestInsertLast passed\n");
+        return true;
+    }
+    printf("TestInsertLast failed. Wrong tail element: Expected 44, got %d\n", res);
+    return false;
+}
+
+bool TestInsertAfter() {
+    List_t<int> list = List_t<int>(10);
+    list.InsertFirst(22);
+    list.InsertLast(13);
+    list.InsertAfter(0, 34);
+    list.Dump();
+    int res = 0;
+    if ((res = list.GetAfter(0)) == 34) {
+        printf("TestInsertAfter passed\n");
+        return true;
+    }
+    printf("TestInsertAfter failed. Wrong element: Expected 34, got %d\n", res);
+    return false;
+}
+
+bool TestInsertBefore() {
+    List_t<int> list = List_t<int>(10);
+    list.InsertFirst(22);
+    list.InsertLast(13);
+    list.InsertLast(49);
+    list.InsertBefore(2, 87);
+    int res = 0;
+    if ((res = list.GetBefore(2)) == 87) {
+        printf("TestInsertBefore passed\n");
+        return true;
+    }
+    printf("TestInsertBefore failed. Wrong element: Expected 87, got %d\n", res);
+    return false;
+}
+
+bool TestGetElemByPos() {
+    List_t<int> list = List_t<int>(10);
+    list.InsertFirst(22);
+    list.InsertLast(13);
+    list.InsertAfter(0, 70);
+    int res = 0;
+    if ((res = list.GetElemByPosition(1)) == 70) {
+        printf("TestGetElemByPos passed\n");
+        return true;
+    }
+    printf("TestGetElemByPos failed. Wrong element: Expected 70, got %d\n", res);
+    return false;
+}
+
+bool TestDeleteElem() {
+    List_t<int> list = List_t<int>(10);
+    list.InsertFirst(22);
+    list.InsertLast(13);
+    list.InsertAfter(0, 70);
+
+    list.DeleteElem(2);
+
+    list.Dump();
+
+    if (list.GetTail() == 13) {
+        printf("TestDeleteElem passed\n");
+        return true;
+    }
+    printf("TestDeleteElem failed.\n");
+    return false;
+}
+
+bool TestDump() {
+    List_t<int> list = List_t<int>(10);
+    list.InsertLast(5);
+    list.InsertFirst(3);
+    list.InsertLast(22);
+    list.InsertBefore(1, 179);
+    list.InsertLast(111);
+    list.InsertLast(44);
+    list.Dump();
+    return true;
+}
