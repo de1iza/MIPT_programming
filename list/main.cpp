@@ -4,7 +4,14 @@
 #include <stdlib.h>
 #include <wchar.h>
 
+#define CHECK_FULL                          \
+    if (size == max_size) {                 \
+        fprintf(stderr, "List is full\n");  \
+        return false;                       \
+    }
+
 const int POISON = 13377331;
+
 
 bool TestInsertFirst();
 bool TestInsertLast();
@@ -48,18 +55,31 @@ public:
     T* GetAfterP(const int index);
     T* GetBeforeP(const int index);
     T GetElemByPosition(const int position);
+    void Sort();
+    bool ListIsValid();
 };
 
 
 int main() {
 
-    TestInsertFirst();
+
+    List_t<int> list = List_t<int>(10);
+    list.InsertLast(5);
+    list.InsertFirst(3);
+    list.InsertLast(22);
+    list.InsertBefore(1, 179);
+    list.ShowList();
+    list.Dump();
+
+    list.Sort();
+    //list.ShowList();
+    /*TestInsertFirst();
     TestInsertLast();
     TestInsertAfter();
     TestInsertBefore();
     TestGetElemByPos();
     TestDeleteElem();
-    TestDump();
+    TestDump();*/
 
     return 0;
 }
@@ -88,10 +108,8 @@ List_t<T>::~List_t() {
 
 template<typename T>
 bool List_t<T>::InsertAfter(const int index, const T value) {
-    if (size == max_size) {
-        fprintf(stderr, "List is full\n");  // TODO resize
-        return false;
-    }
+    if (!ListIsValid()) return false;
+    CHECK_FULL;
     if (!IndexIsValid(index)) {
         fprintf(stderr, "Index out of range\n");
         return false;
@@ -123,6 +141,8 @@ bool List_t<T>::InsertAfter(const int index, const T value) {
 
 template<typename T>
 bool List_t<T>::InsertBefore(const int index, const T value) {
+    if (!ListIsValid()) return false;
+    CHECK_FULL;
     if (!IndexIsValid(index)) {
         fprintf(stderr, "Index out of range\n");
         return false;
@@ -140,10 +160,8 @@ bool List_t<T>::InsertBefore(const int index, const T value) {
 
 template<typename T>
 bool List_t<T>::InsertFirst(const T value) {
-    if (size == max_size) {
-        fprintf(stderr, "List is full\n");
-        return false;
-    }
+    if (!ListIsValid()) return false;
+    CHECK_FULL;
     int pos = next_free;
     data[pos] = value;
 
@@ -167,10 +185,8 @@ bool List_t<T>::InsertFirst(const T value) {
 
 template<typename T>
 bool List_t<T>::InsertLast(const T value) {
-    if (size == max_size) {
-        fprintf(stderr, "List is full\n");  // TODO resize
-        return false;
-    }
+    if (!ListIsValid()) return false;
+    CHECK_FULL;
     int pos = next_free;
     next_free = next[pos];
 
@@ -227,6 +243,7 @@ bool List_t<T>::IndexIsValid(const int index) {
 
 template<typename T>
 bool List_t<T>::DeleteElem(const int index) {
+    if (!ListIsValid()) return false;
     if (!IndexIsValid(index)) {
         fprintf(stderr, "Index out of range\n");
         return false;
@@ -403,6 +420,7 @@ T *List_t<T>::GetBeforeP(const int index) {
 
 template<typename T>
 T List_t<T>::GetElemByPosition(const int position) {
+    if (!ListIsValid()) return false;
     if (position >= size || position < 0) {
         fprintf(stderr, "List doesn't contain element on this position\n");
         return POISON;
@@ -423,6 +441,66 @@ T List_t<T>::GetElemByPosition(const int position) {
         cur_ind = next[cur_ind];
     }
     return data[cur_ind];
+}
+
+template<typename T>
+void List_t<T>::Sort() {
+    if (!ListIsValid()) return;
+    T cur_ind = head;
+    T* tmp_arr = (T*) calloc(size, sizeof(T));
+    int i = 0;
+
+    while (i < size) {
+        tmp_arr[i++] = data[cur_ind];
+        cur_ind = next[cur_ind];
+    }
+
+    memcpy(data, tmp_arr, size * sizeof(T));
+    wmemset((wchar_t*) prev, (T) POISON, max_size);
+
+
+    for (int i = 0; i < size - 1; i++) {
+        next[i] = i + 1;
+        prev[i + 1] = i;
+    }
+
+    for (int i = size; i < max_size - 1; i++) {
+        next[i] = i;
+    }
+
+    next[size - 1] = POISON;
+    prev[0] = POISON;
+
+    next_free = size;
+    head = 0;
+    tail = size - 1;
+
+    free(tmp_arr);
+}
+
+template<typename T>
+bool List_t<T>::ListIsValid() {
+    if (max_size < 0) {
+        fprintf(stderr, "Invalid max_size: %d\n", max_size);
+        return false;
+    }
+    if (size > max_size) {
+        fprintf(stderr, "Invalid size: %d\n", size);
+        return false;
+    }
+    if (data[head] == POISON) {
+        fprintf(stderr, "Invalid head index: %d\n", head);
+        return false;
+    }
+    if (data[tail] == POISON) {
+        fprintf(stderr, "Invalid tail index: %d\n", tail);
+        return false;
+    }
+    if (data[next_free] != POISON) {
+        fprintf(stderr, "Invalid next_free index (is not free): %d\n", next_free);
+        return false;
+    }
+    return true;
 }
 
 bool TestInsertFirst() {
