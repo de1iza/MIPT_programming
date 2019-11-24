@@ -4,10 +4,22 @@
 #include <stdlib.h>
 #include <wchar.h>
 
-#define CHECK_FULL                          \
+#define CHECK_FULL_LIST                     \
     if (size == max_size) {                 \
         fprintf(stderr, "List is full\n");  \
-        return false;                       \
+        return default_ret;                 \
+    }
+
+#define CHECK_INDEX                                 \
+    if (!IndexIsValid(index)) {                     \
+        fprintf(stderr, "Index out of range\n");    \
+        return default_ret;                         \
+    }
+
+#define CHECK_ELEM_IN_LIST                                      \
+    if (prev[index] == POISON &&  index != head) {              \
+        fprintf(stderr, "This element is not in the list\n");   \
+        return default_ret;                                     \
     }
 
 const int POISON = 13377331;
@@ -62,24 +74,13 @@ public:
 
 int main() {
 
-
-    List_t<int> list = List_t<int>(10);
-    list.InsertLast(5);
-    list.InsertFirst(3);
-    list.InsertLast(22);
-    list.InsertBefore(1, 179);
-    list.ShowList();
-    list.Dump();
-
-    list.Sort();
-    //list.ShowList();
-    /*TestInsertFirst();
+    TestInsertFirst();
     TestInsertLast();
     TestInsertAfter();
     TestInsertBefore();
     TestGetElemByPos();
     TestDeleteElem();
-    TestDump();*/
+    TestDump();
 
     return 0;
 }
@@ -109,16 +110,9 @@ List_t<T>::~List_t() {
 template<typename T>
 bool List_t<T>::InsertAfter(const int index, const T value) {
     if (!ListIsValid()) return false;
-    CHECK_FULL;
-    if (!IndexIsValid(index)) {
-        fprintf(stderr, "Index out of range\n");
-        return false;
-    }
-
-    if (prev[index] == POISON && index != head) {
-        fprintf(stderr, "This element is not in the list\n");
-        return false;
-    }
+    bool default_ret = false;
+    CHECK_FULL_LIST;
+    CHECK_INDEX;
 
     if (index == tail) {
         return InsertLast(value);
@@ -142,15 +136,10 @@ bool List_t<T>::InsertAfter(const int index, const T value) {
 template<typename T>
 bool List_t<T>::InsertBefore(const int index, const T value) {
     if (!ListIsValid()) return false;
-    CHECK_FULL;
-    if (!IndexIsValid(index)) {
-        fprintf(stderr, "Index out of range\n");
-        return false;
-    }
-    if (prev[index] == POISON && next[index] == POISON) {
-        fprintf(stderr, "This element is not in the list\n");
-        return false;
-    }
+    bool default_ret = false;
+    CHECK_FULL_LIST;
+    CHECK_INDEX;
+    CHECK_ELEM_IN_LIST;
     if (index == head) {
         return InsertFirst(value);
     }
@@ -161,7 +150,8 @@ bool List_t<T>::InsertBefore(const int index, const T value) {
 template<typename T>
 bool List_t<T>::InsertFirst(const T value) {
     if (!ListIsValid()) return false;
-    CHECK_FULL;
+    bool default_ret = false;
+    CHECK_FULL_LIST;
     int pos = next_free;
     data[pos] = value;
 
@@ -186,7 +176,8 @@ bool List_t<T>::InsertFirst(const T value) {
 template<typename T>
 bool List_t<T>::InsertLast(const T value) {
     if (!ListIsValid()) return false;
-    CHECK_FULL;
+    bool default_ret = false;
+    CHECK_FULL_LIST;
     int pos = next_free;
     next_free = next[pos];
 
@@ -244,14 +235,9 @@ bool List_t<T>::IndexIsValid(const int index) {
 template<typename T>
 bool List_t<T>::DeleteElem(const int index) {
     if (!ListIsValid()) return false;
-    if (!IndexIsValid(index)) {
-        fprintf(stderr, "Index out of range\n");
-        return false;
-    }
-    if (prev[index] == POISON &&  index != head) {
-        fprintf(stderr, "This element is not in the list\n");
-        return false;
-    }
+    bool default_ret = false;
+    CHECK_INDEX;
+    CHECK_ELEM_IN_LIST;
 
     if (index == head) {
         head = next[head];
@@ -386,14 +372,9 @@ T *List_t<T>::GetTailP() {
 
 template<typename T>
 T *List_t<T>::GetAfterP(const int index) {
-    if (!IndexIsValid(index)) {
-        fprintf(stderr, "Index out of range\n");
-        return nullptr;
-    }
-    if (prev[index] == POISON &&  index != head) {
-        fprintf(stderr, "This element is not in the list\n");
-        return nullptr;
-    }
+    T* default_ret = nullptr;
+    CHECK_INDEX;
+    CHECK_ELEM_IN_LIST;
     if (index == tail) {
         return nullptr;
     }
@@ -403,14 +384,9 @@ T *List_t<T>::GetAfterP(const int index) {
 
 template<typename T>
 T *List_t<T>::GetBeforeP(const int index) {
-    if (!IndexIsValid(index)) {
-        fprintf(stderr, "Index out of range\n");
-        return nullptr;
-    }
-    if (prev[index] == POISON &&  index != head) {
-        fprintf(stderr, "This element is not in the list\n");
-        return nullptr;
-    }
+    T* default_ret = nullptr;
+    CHECK_INDEX;
+    CHECK_ELEM_IN_LIST;
     if (index == head) {
         return nullptr;
     }
@@ -488,13 +464,15 @@ bool List_t<T>::ListIsValid() {
         fprintf(stderr, "Invalid size: %d\n", size);
         return false;
     }
-    if (data[head] == POISON) {
-        fprintf(stderr, "Invalid head index: %d\n", head);
-        return false;
-    }
-    if (data[tail] == POISON) {
-        fprintf(stderr, "Invalid tail index: %d\n", tail);
-        return false;
+    if (size) {
+        if (data[head] == POISON) {
+            fprintf(stderr, "Invalid head index: %d\n", head);
+            return false;
+        }
+        if (data[tail] == POISON) {
+            fprintf(stderr, "Invalid tail index: %d\n", tail);
+            return false;
+        }
     }
     if (data[next_free] != POISON) {
         fprintf(stderr, "Invalid next_free index (is not free): %d\n", next_free);
