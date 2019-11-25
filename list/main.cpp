@@ -45,6 +45,8 @@ private:
     size_t size;
     size_t max_size;
     bool IndexIsValid(const int index);
+    bool ListIsValid();
+    bool Resize(const int resize_val = 20);
 public:
     List_t(size_t max_size);
     ~List_t();
@@ -68,7 +70,6 @@ public:
     T* GetBeforeP(const int index);
     T GetElemByPosition(const int position);
     void Sort();
-    bool ListIsValid();
 };
 
 
@@ -111,6 +112,9 @@ template<typename T>
 bool List_t<T>::InsertAfter(const int index, const T value) {
     if (!ListIsValid()) return false;
     bool default_ret = false;
+    if (size == max_size) {
+        Resize();
+    }
     CHECK_FULL_LIST;
     CHECK_INDEX;
 
@@ -128,7 +132,6 @@ bool List_t<T>::InsertAfter(const int index, const T value) {
     prev[next[index]] = pos;
     next[index] = pos;
 
-
     size++;
     return true;
 }
@@ -137,6 +140,9 @@ template<typename T>
 bool List_t<T>::InsertBefore(const int index, const T value) {
     if (!ListIsValid()) return false;
     bool default_ret = false;
+    if (size == max_size) {
+        Resize();
+    }
     CHECK_FULL_LIST;
     CHECK_INDEX;
     CHECK_ELEM_IN_LIST;
@@ -151,6 +157,9 @@ template<typename T>
 bool List_t<T>::InsertFirst(const T value) {
     if (!ListIsValid()) return false;
     bool default_ret = false;
+    if (size == max_size) {
+        Resize();
+    }
     CHECK_FULL_LIST;
     int pos = next_free;
     data[pos] = value;
@@ -177,6 +186,9 @@ template<typename T>
 bool List_t<T>::InsertLast(const T value) {
     if (!ListIsValid()) return false;
     bool default_ret = false;
+    if (size == max_size) {
+        Resize();
+    }
     CHECK_FULL_LIST;
     int pos = next_free;
     next_free = next[pos];
@@ -474,10 +486,42 @@ bool List_t<T>::ListIsValid() {
             return false;
         }
     }
-    if (data[next_free] != POISON) {
-        fprintf(stderr, "Invalid next_free index (is not free): %d\n", next_free);
+    if (next_free != POISON) {
+        if (data[next_free] != POISON) {
+            fprintf(stderr, "Invalid next_free index (is not free): %d\n", next_free);
+            return false;
+        }
+    }
+    return true;
+}
+
+template<typename T>
+bool List_t<T>::Resize(const int resize_val) {
+    T* new_data = (T*) realloc(data, (max_size + resize_val) * sizeof(T));
+    int* new_next = (int*) realloc(next, (max_size + resize_val) * sizeof(int));
+    int* new_prev = (int*) realloc(prev, (max_size + resize_val) * sizeof(int));
+
+    if (new_data == nullptr || new_prev == nullptr || new_next == nullptr) {
+        fprintf(stderr, "Memory allocation error\n");
         return false;
     }
+
+    data = new_data;
+    next = new_next;
+    prev = new_prev;
+
+    wmemset((wchar_t*) data + max_size, (T) POISON, resize_val);
+    wmemset((wchar_t*) prev + max_size, (T) POISON, resize_val);
+
+
+    for (int i = max_size; i < max_size + resize_val - 1; i++) {
+        next[i] = i + 1;
+    }
+    next[max_size + resize_val - 1] = POISON;
+    next_free = max_size;
+
+    max_size += resize_val;
+
     return true;
 }
 
@@ -516,8 +560,8 @@ bool TestInsertAfter() {
     List_t<int> list = List_t<int>(10);
     list.InsertFirst(22);
     list.InsertLast(13);
-    list.InsertAfter(0, 34);
-    list.Dump();
+    for (int i = 0; i < 15; i++)
+        list.InsertAfter(0, 34);
     int res = 0;
     if ((res = list.GetAfter(0)) == 34) {
         printf("TestInsertAfter passed\n");
