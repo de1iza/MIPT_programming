@@ -44,6 +44,7 @@ private:
     int next_free;
     size_t size;
     size_t max_size;
+    bool sorted;
     bool IndexIsValid(const int index);
     bool ListIsValid();
     bool Resize(const int resize_val = 20);
@@ -87,7 +88,7 @@ int main() {
 }
 
 template<typename T>
-List_t<T>::List_t(size_t max_size): size(0), head(0), tail(0), next_free(0), max_size(max_size) {
+List_t<T>::List_t(size_t max_size): size(0), head(0), tail(0), next_free(0), max_size(max_size), sorted(false) {
     data = (T*) calloc(max_size, sizeof(T));
     wmemset((wchar_t*) data, (T) POISON, max_size);
 
@@ -132,6 +133,7 @@ bool List_t<T>::InsertAfter(const int index, const T value) {
     prev[next[index]] = pos;
     next[index] = pos;
 
+    sorted = false;
     size++;
     return true;
 }
@@ -149,8 +151,7 @@ bool List_t<T>::InsertBefore(const int index, const T value) {
     if (index == head) {
         return InsertFirst(value);
     }
-    InsertAfter(prev[index], value);
-    return true;
+    return InsertAfter(prev[index], value);
 }
 
 template<typename T>
@@ -169,10 +170,12 @@ bool List_t<T>::InsertFirst(const T value) {
     if (isEmpty()) {
         tail = pos;
         next[pos] = POISON;
+        sorted = true;
     }
     else {
         next[pos] = head;
         prev[head] = pos;
+        sorted = false;
     }
 
 
@@ -201,9 +204,11 @@ bool List_t<T>::InsertLast(const T value) {
     if (isEmpty()) {
         head = pos;
         next[pos] = POISON;
+        sorted = true;
     }
     else {
         prev[pos] = tail;
+        sorted = false;
     }
     tail = pos;
 
@@ -270,6 +275,7 @@ bool List_t<T>::DeleteElem(const int index) {
 
     next_free = index;
     size--;
+    sorted = false;
     return true;
 }
 
@@ -347,6 +353,7 @@ bool List_t<T>::ClearList() {
     head = 0;
     tail = 0;
     next_free = 0;
+    sorted = false;
 
     wmemset((wchar_t*) data, (T) POISON, max_size);
 
@@ -413,22 +420,26 @@ T List_t<T>::GetElemByPosition(const int position) {
         fprintf(stderr, "List doesn't contain element on this position\n");
         return POISON;
     }
+    if (sorted) {
+        return data[position];
+    }
+    else {
+        if (position > size / 2) {
+            int i = size - position - 1;
+            int cur_ind = tail;
+            while (i--) {
+                cur_ind = prev[cur_ind];
+            }
+            return data[cur_ind];
+        }
 
-    if (position > size / 2) {
-        int i = size - position - 1;
-        int cur_ind = tail;
+        int i = position;
+        int cur_ind = head;
         while (i--) {
-            cur_ind = prev[cur_ind];
+            cur_ind = next[cur_ind];
         }
         return data[cur_ind];
     }
-
-    int i = position;
-    int cur_ind = head;
-    while (i--) {
-        cur_ind = next[cur_ind];
-    }
-    return data[cur_ind];
 }
 
 template<typename T>
