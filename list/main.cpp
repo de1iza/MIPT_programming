@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <wchar.h>
+#include <algorithm>
 
 #define CHECK_FULL_LIST                     \
     if (size == max_size) {                 \
@@ -52,10 +53,10 @@ public:
     List_t(size_t max_size);
     ~List_t();
     bool isEmpty();
-    bool InsertBefore(const int index, const T value);
-    bool InsertAfter(const int index, const T value);
-    bool InsertFirst(const T value);
-    bool InsertLast(const T value);
+    int InsertBefore(const int index, const T value);
+    int InsertAfter(const int index, const T value);
+    int InsertFirst(const T value);
+    int InsertLast(const T value);
     T GetHead();
     T GetTail();
     T GetAfter(const int index);
@@ -63,7 +64,9 @@ public:
     bool DeleteElem(const int index);
     bool ClearList();
     void Dump(const char* filename = "dump.dot");
+
     size_t GetSize();
+
     void ShowList();
     T* GetHeadP();
     T* GetTailP();
@@ -75,7 +78,6 @@ public:
 
 
 int main() {
-
     TestInsertFirst();
     TestInsertLast();
     TestInsertAfter();
@@ -110,9 +112,9 @@ List_t<T>::~List_t() {
 }
 
 template<typename T>
-bool List_t<T>::InsertAfter(const int index, const T value) {
-    if (!ListIsValid()) return false;
-    bool default_ret = false;
+int List_t<T>::InsertAfter(const int index, const T value) {
+    if (!ListIsValid()) return -1;
+    int default_ret = -1;
     if (size == max_size) {
         Resize();
     }
@@ -135,13 +137,14 @@ bool List_t<T>::InsertAfter(const int index, const T value) {
 
     sorted = false;
     size++;
-    return true;
+
+    return pos;
 }
 
 template<typename T>
-bool List_t<T>::InsertBefore(const int index, const T value) {
-    if (!ListIsValid()) return false;
-    bool default_ret = false;
+int List_t<T>::InsertBefore(const int index, const T value) {
+    if (!ListIsValid()) return -1;
+    bool default_ret = -1;
     if (size == max_size) {
         Resize();
     }
@@ -155,9 +158,9 @@ bool List_t<T>::InsertBefore(const int index, const T value) {
 }
 
 template<typename T>
-bool List_t<T>::InsertFirst(const T value) {
-    if (!ListIsValid()) return false;
-    bool default_ret = false;
+int List_t<T>::InsertFirst(const T value) {
+    if (!ListIsValid()) return -1;
+    bool default_ret = -1;
     if (size == max_size) {
         Resize();
     }
@@ -182,13 +185,13 @@ bool List_t<T>::InsertFirst(const T value) {
     head = pos;
 
     size++;
-    return true;
+    return pos;
 }
 
 template<typename T>
-bool List_t<T>::InsertLast(const T value) {
-    if (!ListIsValid()) return false;
-    bool default_ret = false;
+int List_t<T>::InsertLast(const T value) {
+    if (!ListIsValid()) return -1;
+    bool default_ret = -1;
     if (size == max_size) {
         Resize();
     }
@@ -208,12 +211,11 @@ bool List_t<T>::InsertLast(const T value) {
     }
     else {
         prev[pos] = tail;
-        sorted = false;
     }
     tail = pos;
 
     size++;
-    return true;
+    return pos;
 }
 
 template<typename T>
@@ -259,6 +261,7 @@ bool List_t<T>::DeleteElem(const int index) {
     if (index == head) {
         head = next[head];
         prev[next[index]] = POISON;
+        sorted = false;
     }
     else if (index == tail) {
         tail = prev[tail];
@@ -267,6 +270,7 @@ bool List_t<T>::DeleteElem(const int index) {
     else {
         next[prev[index]] = next[index];
         prev[next[index]] = prev[index];
+        sorted = false;
     }
 
     data[index] = POISON;
@@ -275,13 +279,13 @@ bool List_t<T>::DeleteElem(const int index) {
 
     next_free = index;
     size--;
-    sorted = false;
+
     return true;
 }
 
 template<typename T>
 void List_t<T>::Dump(const char* filename) {
-    remove("dump.png");
+    if (!ListIsValid()) return;
 
     FILE* file = fopen(filename, "w");
 
@@ -319,8 +323,7 @@ void List_t<T>::Dump(const char* filename) {
 
     fclose(file);
 
-    system("dot -Tpng dump.dot -o dump.png");
-
+    system("dot -Tpng dump.dot -Gdpi=300 -o dump.png");
 }
 
 template<typename T>
@@ -446,17 +449,16 @@ template<typename T>
 void List_t<T>::Sort() {
     if (!ListIsValid()) return;
     T cur_ind = head;
-    T* tmp_arr = (T*) calloc(size, sizeof(T));
+
     int i = 0;
 
     while (i < size) {
-        tmp_arr[i++] = data[cur_ind];
+        prev[i++] = data[cur_ind];
         cur_ind = next[cur_ind];
     }
 
-    memcpy(data, tmp_arr, size * sizeof(T));
-    wmemset((wchar_t*) prev, (T) POISON, max_size);
-
+    memcpy(data, prev, size * sizeof(T));
+    std::fill_n(prev, max_size, (T) POISON);
 
     for (int i = 0; i < size - 1; i++) {
         next[i] = i + 1;
@@ -474,7 +476,6 @@ void List_t<T>::Sort() {
     head = 0;
     tail = size - 1;
 
-    free(tmp_arr);
 }
 
 template<typename T>
@@ -503,6 +504,38 @@ bool List_t<T>::ListIsValid() {
             return false;
         }
     }
+
+    int index = head;
+    int cur_size = 0;
+    bool default_ret = false;
+    while (cur_size < size) {
+        if (index != head) {
+            if (index != tail) {
+                if (next[index] == POISON || prev[index] == POISON) {
+                    fprintf(stderr, "Error in linking elements. Element with index %d is not in list\n", index);
+                    return false;
+                }
+                if (prev[next[index]] != index || next[prev[index]] != index) {
+                    fprintf(stderr, "Error in linking elements. Prev or next index of element with index %d is broken\n", index);
+                    return false;
+                }
+            }
+            else {
+                if (next[prev[index]] != index){
+                    fprintf(stderr, "Error in linking elements. Tail element with index %d is broken\n", index);
+                    return false;
+                }
+            }
+        }
+        else {
+            if (size > 1 && prev[next[index]] != index){
+                fprintf(stderr, "Error in linking elements. Head element with index %d is broken\n", index);
+                return false;
+            }
+        }
+        cur_size++;
+    }
+
     return true;
 }
 
@@ -632,11 +665,14 @@ bool TestDeleteElem() {
 bool TestDump() {
     List_t<int> list = List_t<int>(10);
     list.InsertLast(5);
-    list.InsertFirst(3);
-    list.InsertLast(22);
-    list.InsertBefore(1, 179);
-    list.InsertLast(111);
-    list.InsertLast(44);
+    int test_index = list.InsertLast(22);
+    list.InsertLast(130);
+    list.InsertLast(13);
+    for (int i = 0; i < 10; i++)
+        list.InsertLast(i+100);
+
+
+    list.DeleteElem(test_index);
     list.Dump();
     return true;
 }
