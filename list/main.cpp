@@ -288,7 +288,7 @@ void List_t<T>::Dump(const char* filename) {
     fprintf(file, "digraph list{\n"
                   "rankdir=LR;\n"
                   "forcelabels=true;\n"
-                  "node [shape=record];\n");
+                  "node [shape=record, fontname=\"Lobster\"];\n");
 
     fprintf(file, "head [shape=circle];\n");
     fprintf(file, "tail [shape=circle];\n");
