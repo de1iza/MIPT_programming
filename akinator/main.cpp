@@ -16,14 +16,17 @@ private:
     char* label;
     Node* left;
     Node* right;
+
     void MakeLeftChild() {
         left = (Node*) calloc(1, sizeof(Node));
         *left = Node("");
     }
+
     void MakeRightChild() {
         right = (Node*) calloc(1, sizeof(Node));
         *right = Node("");
     }
+
 public:
     Node(char* label) {
         this->label = (char*) calloc(strlen(label) + 1, sizeof(char));
@@ -104,6 +107,26 @@ public:
         }
     }
 
+    bool Find(char* label) {
+
+        printf("%s\n", this->label);
+
+        if (IsLeaf()) {
+            if (strcmp(this->label, label) == 0)
+                return true;
+        }
+
+
+        if (left) {
+            if (left->Find(label)) return true;
+        }
+        if (right) {
+            if (right->Find(label)) return true;
+        }
+
+        return false;
+    }
+
     friend void LoadNode(FILE* file, Node* node);
     friend int main(); // TODO REMOVE THIS
 };
@@ -154,6 +177,9 @@ public:
         system("dot -Tpng tree.dot -o dump.png");
     }
 
+    bool Find(char* label) {
+        root->Find(label);
+    }
 
 };
 
