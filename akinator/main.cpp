@@ -359,6 +359,8 @@ void AskQuestion(AkinatorTree* tree, Node* node) {
 }
 
 void GuessingMode(AkinatorTree* tree) {
+    assert(tree);
+
     printf("Think of an object or whatever you want and I'll try to guess it.\n");
     AskQuestion(tree, tree->root);
 
@@ -366,6 +368,11 @@ void GuessingMode(AkinatorTree* tree) {
 
 
 int MakePathLensEqual(int* path1, int* path2) {
+    assert(path1);
+    assert(path2);
+    assert(*path1);
+    assert(*path2);
+
     int len1 = floor(log2((double) *path1));
     int len2 = floor(log2((double) *path2));
 
@@ -418,7 +425,7 @@ void ComparisonMode(AkinatorTree* tree) { // TODO add viewing full list of objec
     int path2 = 0;
 
     while (true) {
-        printf("Enter first object to compare: "); 
+        printf("Enter first object to compare: ");
         scanf("%s", object1);
         printf("\n");
         if (tree->Find(object1, &path1)) break;
@@ -461,8 +468,39 @@ void ComparisonMode(AkinatorTree* tree) { // TODO add viewing full list of objec
 
 }
 
+void ShowDefinition(Node* node, int path, int cur_pos) {
+    assert(node);
+    assert(path);
+
+    if (!cur_pos) return;
+
+    if (!((path >> --cur_pos) % 2)) printf("not ");
+    printf("%s\n", node->GetLabel());
+
+    if ((path >> cur_pos) % 2) {
+        ShowDefinition(node->GetLeftChild(), path, cur_pos);
+    } else {
+        ShowDefinition(node->GetRightChild(), path, cur_pos);
+    }
+
+}
 
 void DefinitionMode(AkinatorTree* tree) {
+    assert(tree);
+
+    char object[MAX_INPUT_SIZE] = {};
+    int path = 0;
+
+    while (true) {
+        printf("Enter object you want get definition to: ");
+        scanf("%s", object);
+        printf("\n");
+        if (tree->Find(object, &path)) break;
+        printf("I don't know this object :( Try again. \n");
+    }
+
+    ShowDefinition(tree->root, path, floor(log2((double) path)));
+
 
 }
 
