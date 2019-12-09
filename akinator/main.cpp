@@ -15,8 +15,6 @@ const char* TREE_FILE = "tree.txt";
     system("espeak \"" text"\"");
 
 
-//TODO destructors
-
 class Node { // make template label data type
 private:
     char* label;
@@ -39,6 +37,19 @@ public:
         strcpy(this->label, label);
         left = nullptr;
         right = nullptr;
+    }
+
+    ~Node() {
+        free(label);
+        if (left) {
+            left->~Node();
+        }
+        free(left);
+
+        if (right) {
+            right->~Node();
+        }
+        free(right);
     }
 
     bool IsLeaf(){
@@ -162,6 +173,11 @@ public:
 
     }
 
+    ~AkinatorTree() {
+        root->~Node();
+        free(root);
+    }
+
     void Dump(FILE* fp) {
         root->Dump(fp);
     }
@@ -178,6 +194,7 @@ public:
         fclose(file);
 
         system("dot -Tpng tree.dot -o dump.png");
+        system("display dump.png");
     }
 
     bool Find(char* label, int* path) {
@@ -196,16 +213,11 @@ void DefinitionMode(AkinatorTree* tree);
 void SpeakOut(char* text);
 
 int main() {
-
-
-
     AkinatorTree T = AkinatorTree(open_file(TREE_FILE, "r"));
-    T.Show();
 
 
     Game(&T);
 
-    T.Show();
     return 0;
 }
 
@@ -257,28 +269,37 @@ void Game(AkinatorTree* tree) {
 
     SpeakOut("Hello! I'm Akinator. What mode do you want to play? \n");
 
-    printf("1 -  guessing mode\n");
-    printf("2 -  comparison mode\n");
-    printf("3 -  definition mode\n");
     int ans = 0;
     while (true) {
-        printf("Enter number from 1 to 3: ");
+        printf("1 - guessing mode\n");
+        printf("2 - comparison mode\n");
+        printf("3 - definition mode\n");
+        printf("4 - view my tree\n");
+        printf("5 - exit\n");
+        printf("Enter number from 1 to 5: ");
         scanf("%d", &ans);
-        if (ans >= 1 && ans <= 3) break;
+        if (ans < 1 || ans > 5) continue;
+        switch (ans) {
+            case 1:
+                GuessingMode(tree);
+                break;
+            case 2:
+                ComparisonMode(tree);
+                break;
+            case 3:
+                DefinitionMode(tree);
+                break;
+            case 4:
+                tree->Show();
+                break;
+            case 5:
+                return;
+                break;
+        }
+        printf("\n");
     }
-    printf("\n");
 
-    switch (ans) {
-        case 1:
-            GuessingMode(tree);
-            break;
-        case 2:
-            ComparisonMode(tree);
-            break;
-        case 3:
-            DefinitionMode(tree);
-            break;
-    }
+
 }
 
 void AddNewQuestion(Node* node, char* object, char* question) {
@@ -297,7 +318,7 @@ void GuessingFinal(AkinatorTree* tree, Node* node, bool guessed) {
     char question[MAX_COMMAND_SIZE] = {};
 
     if (guessed) {
-        SpeakOut("I knew! It was too easy :)");
+        SpeakOut("I knew! It was too easy :)\n");
     } else {
         SpeakOut("I failed :( What was it? \n");
         scanf("%s", inp_object);
