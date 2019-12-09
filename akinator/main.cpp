@@ -148,10 +148,8 @@ public:
 
 class AkinatorTree {
 private:
-
+    Node* root;
 public:
-    Node* root;   // TODO MAKE ROOT PRIVATE AGAIN
-
     AkinatorTree(char* init_question) {
         root = (Node*) calloc(1, sizeof(Node));
         *root = Node(init_question);
@@ -176,6 +174,10 @@ public:
     ~AkinatorTree() {
         root->~Node();
         free(root);
+    }
+
+    Node* GetRoot() {
+        return root;
     }
 
     void Dump(FILE* fp) {
@@ -390,7 +392,7 @@ void GuessingMode(AkinatorTree* tree) {
     assert(tree);
 
     SpeakOut("Think of an object and I'll try to guess it.\n");
-    AskQuestion(tree, tree->root);
+    AskQuestion(tree, tree->GetRoot());
 
 }
 
@@ -444,7 +446,7 @@ void ShowDifferent(Node* node, int depth, int path, int cur_pos) {
 
 }
 
-void ComparisonMode(AkinatorTree* tree) { // TODO add viewing full list of objects
+void ComparisonMode(AkinatorTree* tree) { // TODO separate into functions
     assert(tree);
 
     char object1[MAX_INPUT_SIZE] = {};
@@ -482,14 +484,14 @@ void ComparisonMode(AkinatorTree* tree) { // TODO add viewing full list of objec
         SpeakOut("They have nothing in common :( \n");
     } else {
         SpeakOut("Their similar characteristics are: \n");
-        ShowSimilar(tree->root, similar_nodes, path1, max_len - 1);
+        ShowSimilar(tree->GetRoot(), similar_nodes, path1, max_len - 1);
     }
 
     printf("\nBut %s is ", object1);
     if ((path1 >> (max_len - similar_nodes - 1)) % 2 == 0) {
         printf("not ");
     }
-    ShowDifferent(tree->root, similar_nodes, path1, max_len - 1);
+    ShowDifferent(tree->GetRoot(), similar_nodes, path1, max_len - 1);
 
 }
 
@@ -524,7 +526,7 @@ void DefinitionMode(AkinatorTree* tree) {
         SpeakOut("I don't know this object :( Try again. \n");
     }
 
-    ShowDefinition(tree->root, path, floor(log2((double) path)));
+    ShowDefinition(tree->GetRoot(), path, floor(log2((double) path)));
 
 
 }
