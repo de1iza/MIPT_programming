@@ -8,6 +8,7 @@
 
 const int MAX_INPUT_SIZE = 100;
 const int MAX_COMMAND_SIZE = 200;
+const int MAX_SENTENCE_SIZE = 10000;
 const char* TREE_FILE = "tree.txt";
 
 #define SPEAK_OUT(text)             \
@@ -39,7 +40,7 @@ public:
         right = nullptr;
     }
 
-    ~Node() {
+    /*~Node() {
         free(label);
         if (left) {
             left->~Node();
@@ -50,7 +51,7 @@ public:
             right->~Node();
         }
         free(right);
-    }
+    }*/
 
     bool IsLeaf(){
         return left == nullptr && right == nullptr;
@@ -171,10 +172,10 @@ public:
 
     }
 
-    ~AkinatorTree() {
+    /*~AkinatorTree() {
         root->~Node();
         free(root);
-    }
+    }*/
 
     Node* GetRoot() {
         return root;
@@ -215,10 +216,9 @@ void DefinitionMode(AkinatorTree* tree);
 void SpeakOut(char* text);
 
 int main() {
-    AkinatorTree T = AkinatorTree(open_file(TREE_FILE, "r"));
+    AkinatorTree tree = AkinatorTree(open_file(TREE_FILE, "r"));
 
-
-    Game(&T);
+    Game(&tree);
 
     return 0;
 }
@@ -292,6 +292,7 @@ void Game(AkinatorTree* tree) {
                 DefinitionMode(tree);
                 break;
             case 4:
+                //tree->Dump(open_file(TREE_FILE, "w"));
                 tree->Show();
                 break;
             case 5:
@@ -323,8 +324,7 @@ void GuessingFinal(AkinatorTree* tree, Node* node, bool guessed) {
         SpeakOut("I knew! It was too easy :)\n");
     } else {
         SpeakOut("I failed :( What was it? \n");
-        scanf("%s", inp_object);
-
+        scanf(" %[^\n]", inp_object);
         strcpy(question, "What distinguishes ");
         strcat(question, inp_object);
         strcat(question, " from ");
@@ -334,10 +334,12 @@ void GuessingFinal(AkinatorTree* tree, Node* node, bool guessed) {
         //printf("What distinguishes %s from %s?\n", inp_object, node->GetLabel());
 
 
-        scanf("%s", inp_property);
+        scanf(" %[^\n]%*c", inp_property);
         AddNewQuestion(node, inp_object, inp_property);
 
-        tree->Dump(open_file(TREE_FILE, "w"));
+        FILE* fp = open_file(TREE_FILE, "w");
+        tree->Dump(fp);
+        fclose(fp);
     }
 }
 
@@ -417,9 +419,25 @@ int MakePathLensEqual(int* path1, int* path2) {
 void ShowSimilar(Node* node, int n_similar, int path, int cur_pos) {
     assert(node);
 
+    char characteristic[MAX_COMMAND_SIZE] = {};
+
+    fflush(stdout);
+
     if (!n_similar) return;
-    if (!((path >> cur_pos) % 2)) printf("not ");
-    printf("%s\n", node->GetLabel());
+    if (!((path >> cur_pos) % 2)) {
+        strcpy(characteristic, "not ");
+        //printf("not ");
+    }
+    strcat(characteristic, node->GetLabel());
+    if (n_similar == 2)
+        strcat(characteristic, " and ");
+    else if (n_similar == 1)
+        strcat(characteristic, ". \n");
+    else
+        strcat(characteristic, ", ");
+
+    //printf("%s\n", node->GetLabel());
+    SpeakOut(characteristic);
 
     if ((path >> cur_pos) % 2) {
         ShowSimilar(node->GetLeftChild(), --n_similar, path, --cur_pos);
@@ -446,7 +464,7 @@ void ShowDifferent(Node* node, int depth, int path, int cur_pos) {
 
 }
 
-void ComparisonMode(AkinatorTree* tree) { // TODO separate into functions
+void ComparisonMode(AkinatorTree* tree) {
     assert(tree);
 
     char object1[MAX_INPUT_SIZE] = {};
@@ -456,7 +474,7 @@ void ComparisonMode(AkinatorTree* tree) { // TODO separate into functions
 
     while (true) {
         printf("Enter first object to compare: ");
-        scanf("%s", object1);
+        scanf(" %[^\n]", object1);
         printf("\n");
         if (tree->Find(object1, &path1)) break;
         SpeakOut("I don't know this object :( Try again. \n");
@@ -464,7 +482,7 @@ void ComparisonMode(AkinatorTree* tree) { // TODO separate into functions
 
     while (true) {
         printf("Enter second object to compare: ");
-        scanf("%s", object2);
+        scanf(" %[^\n]", object2);
         printf("\n");
         if (!strcmp(object1, object2)) {
             SpeakOut("These objects are the same... Don't try to fool me.\n");
@@ -480,18 +498,26 @@ void ComparisonMode(AkinatorTree* tree) { // TODO separate into functions
 
     similar_nodes = max_len - (int) floor(log2(double(path1 ^ path2))) - 1;
 
+    char sentence[MAX_SENTENCE_SIZE] = {};
+
     if (!similar_nodes) {
         SpeakOut("They have nothing in common :( \n");
     } else {
-        SpeakOut("Their similar characteristics are: \n");
+        strcpy(sentence, object1);
+        strcat(sentence, " and ");
+        strcat(sentence, object2);
+        strcat(sentence, " in common are ");
+
+        SpeakOut(sentence);
         ShowSimilar(tree->GetRoot(), similar_nodes, path1, max_len - 1);
     }
 
-    printf("\nBut %s is ", object1);
+    printf("But %s is ", object1);
     if ((path1 >> (max_len - similar_nodes - 1)) % 2 == 0) {
         printf("not ");
     }
     ShowDifferent(tree->GetRoot(), similar_nodes, path1, max_len - 1);
+    printf(".\n");
 
 }
 
@@ -499,10 +525,23 @@ void ShowDefinition(Node* node, int path, int cur_pos) {
     assert(node);
     assert(path);
 
+    char characteristic[MAX_COMMAND_SIZE] = {};
+
     if (!cur_pos) return;
 
-    if (!((path >> --cur_pos) % 2)) printf("not ");
-    printf("%s\n", node->GetLabel());
+    fflush(stdout);
+
+    if (!((path >> --cur_pos) % 2)) strcpy(characteristic, "not ");
+
+    strcat(characteristic, node->GetLabel());
+    if (cur_pos == 1)
+        strcat(characteristic, " and ");
+    else if (cur_pos == 0)
+        strcat(characteristic, ".\n");
+    else
+        strcat(characteristic, ", ");
+
+    SpeakOut(characteristic);
 
     if ((path >> cur_pos) % 2) {
         ShowDefinition(node->GetLeftChild(), path, cur_pos);
@@ -516,18 +555,23 @@ void DefinitionMode(AkinatorTree* tree) {
     assert(tree);
 
     char object[MAX_INPUT_SIZE] = {};
+    char sentence[MAX_COMMAND_SIZE] = {};
     int path = 0;
 
     while (true) {
         printf("Enter object you want get definition to: ");
-        scanf("%s", object);
+        scanf(" %[^\n]", object);
         printf("\n");
         if (tree->Find(object, &path)) break;
         SpeakOut("I don't know this object :( Try again. \n");
     }
 
-    ShowDefinition(tree->GetRoot(), path, floor(log2((double) path)));
+    strcpy(sentence, object);
+    strcat(sentence, " is ");
 
+    SpeakOut(sentence);
+
+    ShowDefinition(tree->GetRoot(), path, floor(log2((double) path)));
 
 }
 
