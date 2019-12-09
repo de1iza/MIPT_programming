@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <math.h>
 #include "textlib.h"
 
 //const int LABELSIZE = 100;
@@ -107,21 +108,19 @@ public:
         }
     }
 
-    bool Find(char* label) {
-
-        printf("%s\n", this->label);
-
+    bool Find(char* label, int path, int* final_path) {
         if (IsLeaf()) {
-            if (strcmp(this->label, label) == 0)
+            if (strcmp(this->label, label) == 0) {
+                *final_path = path;
                 return true;
+            }
         }
-
 
         if (left) {
-            if (left->Find(label)) return true;
+            if (left->Find(label, (path << 1) | 1, final_path)) return true;
         }
         if (right) {
-            if (right->Find(label)) return true;
+            if (right->Find(label, path << 1, final_path)) return true;
         }
 
         return false;
@@ -177,8 +176,8 @@ public:
         system("dot -Tpng tree.dot -o dump.png");
     }
 
-    bool Find(char* label) {
-        root->Find(label);
+    bool Find(char* label, int* path) {
+        root->Find(label, 1, path);
     }
 
 };
@@ -191,6 +190,25 @@ void GuessingFinal(AkinatorTree* tree, Node* node, bool guessed);
 void ComparisonMode(AkinatorTree* tree);
 void DefinitionMode(AkinatorTree* tree);
 
+
+void printBits(size_t const size, void const * const ptr)
+{
+    unsigned char *b = (unsigned char*) ptr;
+    unsigned char byte;
+    int i, j;
+
+    for (i=size-1;i>=0;i--)
+    {
+        for (j=7;j>=0;j--)
+        {
+            byte = (b[i] >> j) & 1;
+            printf("%u", byte);
+        }
+    }
+    puts("");
+}
+
+
 int main() {
 
     /*AkinatorTree tree = AkinatorTree("initial");
@@ -202,6 +220,11 @@ int main() {
     AkinatorTree T = AkinatorTree(open_file(TREE_FILE, "r"));
     T.Show();
 
+    int path = 0;
+
+    //T.Find("Tagir", &path);
+
+    //printBits(sizeof(path), &path);
     Game(&T);
 
     T.Show();
@@ -341,7 +364,100 @@ void GuessingMode(AkinatorTree* tree) {
 
 }
 
-void ComparisonMode(AkinatorTree* tree) {
+
+int MakePathLensEqual(int* path1, int* path2) {
+    int len1 = floor(log2((double) *path1));
+    int len2 = floor(log2((double) *path2));
+
+    if (len1 > len2) {
+        *path2 = *path2 << (len1 - len2);
+        return len1;
+    }
+    *path1 = *path1 << (len2 - len1);
+    return len2;
+}
+
+void ShowSimilar(Node* node, int n_similar, int path, int cur_pos) {
+    assert(node);
+
+    if (!n_similar) return;
+    if (!((path >> cur_pos) % 2)) printf("not ");
+    printf("%s\n", node->GetLabel());
+
+    if ((path >> cur_pos) % 2) {
+        ShowSimilar(node->GetLeftChild(), --n_similar, path, --cur_pos);
+    } else {
+        ShowSimilar(node->GetRightChild(), --n_similar, path, --cur_pos);
+    }
+
+}
+
+void ShowDifferent(Node* node, int depth, int path, int cur_pos) {
+    assert(node);
+
+    if (!depth) {
+        printf(node->GetLabel());
+        return;
+    }
+
+    if ((path >> cur_pos) % 2){
+        ShowDifferent(node->GetLeftChild(), --depth, path, --cur_pos);
+    } else {
+        ShowDifferent(node->GetRightChild(), --depth, path, --cur_pos);
+    }
+
+
+}
+
+void ComparisonMode(AkinatorTree* tree) { // TODO add viewing full list of objects
+    assert(tree);
+
+    char object1[MAX_INPUT_SIZE] = {};
+    char object2[MAX_INPUT_SIZE] = {};
+    int path1 = 0;
+    int path2 = 0;
+
+    while (true) {
+        printf("Enter first object to compare: "); 
+        scanf("%s", object1);
+        printf("\n");
+        if (tree->Find(object1, &path1)) break;
+        printf("I don't know this object :( Try again. \n");
+    }
+
+    while (true) {
+        printf("Enter second object to compare: ");
+        scanf("%s", object2);
+        printf("\n");
+        if (!strcmp(object1, object2)) {
+            printf("These objects are the same... Don't try to fool me.\n");
+            continue;
+        }
+        if (tree->Find(object2, &path2)) break;
+        printf("I don't know this object :( Try again. \n");
+    }
+
+    int max_len = MakePathLensEqual(&path1, &path2);
+
+    //printBits(sizeof(path1), &path1);
+    //printBits(sizeof(path2), &path2);
+
+    int similar_nodes = 0;
+
+    similar_nodes = max_len - (int) floor(log2(double(path1 ^ path2))) - 1;
+
+    if (!similar_nodes) {
+        printf("They have nothing in common :( \n");
+    } else {
+        printf("Their similar characteristics are: \n");
+        ShowSimilar(tree->root, similar_nodes, path1, max_len - 1);
+    }
+
+    printf("\nBut %s is ", object1);
+    if ((path1 >> (max_len - similar_nodes - 1)) % 2 == 0) {
+        printf("not ");
+    }
+    ShowDifferent(tree->root, similar_nodes, path1, max_len - 1);
 
 }
 
