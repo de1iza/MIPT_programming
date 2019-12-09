@@ -5,10 +5,15 @@
 #include <math.h>
 #include "textlib.h"
 
-//const int LABELSIZE = 100;
 
 const int MAX_INPUT_SIZE = 100;
+const int MAX_COMMAND_SIZE = 200;
 const char* TREE_FILE = "tree.txt";
+
+#define SPEAK_OUT(text)             \
+    printf(text);                   \
+    system("espeak \"" text"\"");
+
 
 //TODO destructors
 
@@ -127,7 +132,6 @@ public:
     }
 
     friend void LoadNode(FILE* file, Node* node);
-    friend int main(); // TODO REMOVE THIS
 };
 
 
@@ -189,42 +193,16 @@ void AddNewQuestion(Node* node, char* object, char* question);
 void GuessingFinal(AkinatorTree* tree, Node* node, bool guessed);
 void ComparisonMode(AkinatorTree* tree);
 void DefinitionMode(AkinatorTree* tree);
-
-
-void printBits(size_t const size, void const * const ptr)
-{
-    unsigned char *b = (unsigned char*) ptr;
-    unsigned char byte;
-    int i, j;
-
-    for (i=size-1;i>=0;i--)
-    {
-        for (j=7;j>=0;j--)
-        {
-            byte = (b[i] >> j) & 1;
-            printf("%u", byte);
-        }
-    }
-    puts("");
-}
-
+void SpeakOut(char* text);
 
 int main() {
 
-    /*AkinatorTree tree = AkinatorTree("initial");
-    tree.root->AddLeftChild(Node("lefft"));
-    tree.root->AddRightChild(Node("right"));
-    tree.Show();*/
 
 
     AkinatorTree T = AkinatorTree(open_file(TREE_FILE, "r"));
     T.Show();
 
-    int path = 0;
 
-    //T.Find("Tagir", &path);
-
-    //printBits(sizeof(path), &path);
     Game(&T);
 
     T.Show();
@@ -277,7 +255,8 @@ void LoadNode(FILE* file, Node* node) {
 void Game(AkinatorTree* tree) {
     assert(tree);
 
-    printf("Hello! I'm Akinator. What mode do you want to play? \n");
+    SpeakOut("Hello! I'm Akinator. What mode do you want to play? \n");
+
     printf("1 -  guessing mode\n");
     printf("2 -  comparison mode\n");
     printf("3 -  definition mode\n");
@@ -315,13 +294,23 @@ void AddNewQuestion(Node* node, char* object, char* question) {
 void GuessingFinal(AkinatorTree* tree, Node* node, bool guessed) {
     char inp_object[MAX_INPUT_SIZE] = {};
     char inp_property[MAX_INPUT_SIZE] = {};
+    char question[MAX_COMMAND_SIZE] = {};
 
     if (guessed) {
-        printf("I knew! It was too easy :)");
+        SpeakOut("I knew! It was too easy :)");
     } else {
-        printf("I failed :( What was it? \n");
+        SpeakOut("I failed :( What was it? \n");
         scanf("%s", inp_object);
-        printf("What distinguishes %s from %s?\n", inp_object, node->GetLabel());
+
+        strcpy(question, "What distinguishes ");
+        strcat(question, inp_object);
+        strcat(question, " from ");
+        strcat(question, node->GetLabel());
+        strcat(question, "?\n");
+        SpeakOut(question);
+        //printf("What distinguishes %s from %s?\n", inp_object, node->GetLabel());
+
+
         scanf("%s", inp_property);
         AddNewQuestion(node, inp_object, inp_property);
 
@@ -329,11 +318,29 @@ void GuessingFinal(AkinatorTree* tree, Node* node, bool guessed) {
     }
 }
 
+void SpeakOut(char* text) {
+    char command[MAX_COMMAND_SIZE] = {};
+
+    printf(text);
+    strcpy(command, "espeak \"");
+    strcat(command, text);
+    strcat(command, "\"");
+
+    system(command);
+}
+
 void AskQuestion(AkinatorTree* tree, Node* node) {
     char ans[MAX_INPUT_SIZE] = {};
+    char question[MAX_COMMAND_SIZE] = {};
 
     while (true) {
-        printf("Is it %s?\n", node->GetLabel());
+
+       strcpy(question, "Is it ");
+       strcat(question, node->GetLabel());
+       strcat(question, "?\n");
+
+       SpeakOut(question);
+
         printf("Enter yes/y or no/n: ");
         scanf("%s", ans);
         printf("\n");
@@ -352,7 +359,7 @@ void AskQuestion(AkinatorTree* tree, Node* node) {
             AskQuestion(tree, node->GetRightChild());
             break;
         } else {
-            printf("I don't understand you:( Try again.\n\n");
+            SpeakOut("I don't understand you:( Try again.\n\n");
         }
 
     }
@@ -361,7 +368,7 @@ void AskQuestion(AkinatorTree* tree, Node* node) {
 void GuessingMode(AkinatorTree* tree) {
     assert(tree);
 
-    printf("Think of an object or whatever you want and I'll try to guess it.\n");
+    SpeakOut("Think of an object and I'll try to guess it.\n");
     AskQuestion(tree, tree->root);
 
 }
@@ -429,7 +436,7 @@ void ComparisonMode(AkinatorTree* tree) { // TODO add viewing full list of objec
         scanf("%s", object1);
         printf("\n");
         if (tree->Find(object1, &path1)) break;
-        printf("I don't know this object :( Try again. \n");
+        SpeakOut("I don't know this object :( Try again. \n");
     }
 
     while (true) {
@@ -437,26 +444,23 @@ void ComparisonMode(AkinatorTree* tree) { // TODO add viewing full list of objec
         scanf("%s", object2);
         printf("\n");
         if (!strcmp(object1, object2)) {
-            printf("These objects are the same... Don't try to fool me.\n");
+            SpeakOut("These objects are the same... Don't try to fool me.\n");
             continue;
         }
         if (tree->Find(object2, &path2)) break;
-        printf("I don't know this object :( Try again. \n");
+        SpeakOut("I don't know this object :( Try again. \n");
     }
 
     int max_len = MakePathLensEqual(&path1, &path2);
-
-    //printBits(sizeof(path1), &path1);
-    //printBits(sizeof(path2), &path2);
 
     int similar_nodes = 0;
 
     similar_nodes = max_len - (int) floor(log2(double(path1 ^ path2))) - 1;
 
     if (!similar_nodes) {
-        printf("They have nothing in common :( \n");
+        SpeakOut("They have nothing in common :( \n");
     } else {
-        printf("Their similar characteristics are: \n");
+        SpeakOut("Their similar characteristics are: \n");
         ShowSimilar(tree->root, similar_nodes, path1, max_len - 1);
     }
 
@@ -496,7 +500,7 @@ void DefinitionMode(AkinatorTree* tree) {
         scanf("%s", object);
         printf("\n");
         if (tree->Find(object, &path)) break;
-        printf("I don't know this object :( Try again. \n");
+        SpeakOut("I don't know this object :( Try again. \n");
     }
 
     ShowDefinition(tree->root, path, floor(log2((double) path)));
