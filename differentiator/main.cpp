@@ -227,6 +227,7 @@ bool IsFunction(char* string);
 DiffTree* Differentiate(DiffTree* tree);
 Node* Differentiate(Node* node);
 Node* DifferentiateOperator(Node* node);
+Node* DifferentiateFunction(Node* node);
 
 int main() {
 
@@ -234,7 +235,7 @@ int main() {
     //tree->Show();
     //tree->Dump(fopen("dump.txt", "w"));
 
-    DiffTree* tree = GetG("x*7/6"); // TODO parse whitespaces
+    DiffTree* tree = GetG("x*ln(x)"); // TODO parse whitespaces
     //tree->Show();
 
     DiffTree* new_tree = Differentiate(tree);
@@ -429,18 +430,17 @@ Node* GetF() {
     char string[MAX_INPUT_SIZE] = "";
     int read_cnt = 0;
 
-    if (sscanf(s, " %[sincotanln]%n", string, &read_cnt)) {
+    if (sscanf(s, " %[sincotgln]%n", string, &read_cnt)) {
         s += read_cnt;
 
         printf(string);
         if (IsFunction(string)) {
-            printf("FUNC!");
 
             node = (Node*) calloc(1, sizeof(Node));
             *node = Node(string, TREE_FUNC);
 
             Node* new_node = GetP();
-            node->AddRightChild(*new_node);
+            node->AddLeftChild(*new_node);
 
         }
     }
@@ -451,7 +451,7 @@ Node* GetF() {
 
 }
 
-#define DEF_FUNC(name, some_str)     \
+#define DEF_FUNC(name, code)     \
     if (!strcmp(string, #name)) return true;
 
 bool IsFunction(char* string) {
@@ -487,6 +487,9 @@ Node* Differentiate(Node* node) {
             break;
         case TREE_OP:
             return DifferentiateOperator(node);
+            break;
+        case TREE_FUNC:
+            return DifferentiateFunction(node);
             break;
     }
 
@@ -559,3 +562,25 @@ Node* DifferentiateOperator(Node* node) {
 
     return new_node;
 }
+
+
+#define DEF_FUNC(name, code)    \
+    else if (!strcmp(node->GetLabel(), #name)) code
+
+Node* DifferentiateFunction(Node* node) { // TODO check zero division in calculation
+    Node* new_node = (Node*) calloc(1, sizeof(Node));
+
+    if (false) ;
+
+    #include "funcs.h"
+
+    else {
+        fprintf(stderr, "Unknown function %s", node->GetLabel());
+        abort();
+    }
+
+    return new_node;
+
+}
+
+#undef DEF_FUNC
