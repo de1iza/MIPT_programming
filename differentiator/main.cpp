@@ -235,7 +235,7 @@ int main() {
     //tree->Show();
     //tree->Dump(fopen("dump.txt", "w"));
 
-    DiffTree* tree = GetG("x*ln(x)"); // TODO parse whitespaces
+    DiffTree* tree = GetG("x/3"); // TODO parse whitespaces
     //tree->Show();
 
     DiffTree* new_tree = Differentiate(tree);
@@ -496,6 +496,9 @@ Node* Differentiate(Node* node) {
     return new_node;
 }
 
+#define DEF_OP(operator, code) \
+    else if (!strcmp(node->GetLabel(), #operator)) code
+
 Node* DifferentiateOperator(Node* node) {
     assert(node);
 
@@ -503,66 +506,20 @@ Node* DifferentiateOperator(Node* node) {
 
     printf(node->GetLabel());
 
-    if (!strcmp(node->GetLabel(), "+")) {     // TODO make macros for that???
-        *new_node = Node("+", TREE_OP);
-        new_node->AddLeftChild(*Differentiate(node->GetLeftChild()));
-        new_node->AddRightChild(*Differentiate(node->GetRightChild()));
-    }
-    else if (!strcmp(node->GetLabel(), "-")) {
-        *new_node = Node("-", TREE_OP);
-        new_node->AddLeftChild(*Differentiate(node->GetLeftChild()));
-        new_node->AddRightChild(*Differentiate(node->GetRightChild()));
-    }
-    else if (!strcmp(node->GetLabel(), "*")) {
-        *new_node = Node("+", TREE_OP);
 
-        Node* left = (Node*) calloc(1, sizeof(Node));
-        Node* right = (Node*) calloc(1, sizeof(Node));
+    if (false) ;
 
-        *left = Node("*", TREE_OP);
-        left->AddLeftChild(*node->GetLeftChild());
-        left->AddRightChild(*Differentiate(node->GetRightChild()));
+    #include "operators.h"
 
-        *right = Node("*", TREE_OP);
-        right->AddLeftChild(*Differentiate(node->GetLeftChild()));
-        right->AddRightChild(*node->GetRightChild());
-
-        new_node->AddLeftChild(*left);
-        new_node->AddRightChild(*right);
-    }
-    else if (!strcmp(node->GetLabel(), "/")) {
-        *new_node = Node("/", TREE_OP);
-
-        Node* left = (Node*) calloc(1, sizeof(Node));
-        Node* left_left = (Node*) calloc(1, sizeof(Node));
-        Node* left_right = (Node*) calloc(1, sizeof(Node));
-        Node* right = (Node*) calloc(1, sizeof(Node));
-
-
-        *left = Node("-", TREE_OP);
-
-        *left_left = Node("*", TREE_OP);
-        left_left->AddLeftChild(*Differentiate(node->GetLeftChild()));
-        left_left->AddRightChild(*node->GetRightChild());
-
-        *left_right = Node("*", TREE_OP);
-        left_right->AddLeftChild(*node->GetLeftChild());
-        left_right->AddRightChild(*Differentiate(node->GetRightChild()));
-
-        left->AddLeftChild(*left_left);
-        left->AddRightChild(*left_right);
-
-        *right = Node("*", TREE_OP);
-        right->AddLeftChild(*node->GetRightChild());
-        right->AddRightChild(*node->GetRightChild());
-
-        new_node->AddLeftChild(*left);
-        new_node->AddRightChild(*right);
+    else {
+        fprintf(stderr, "Unknown operator %s", node->GetLabel());
+        abort();
     }
 
     return new_node;
 }
 
+#undef DEF_OP
 
 #define DEF_FUNC(name, code)    \
     else if (!strcmp(node->GetLabel(), #name)) code
@@ -580,7 +537,6 @@ Node* DifferentiateFunction(Node* node) { // TODO check zero division in calcula
     }
 
     return new_node;
-
 }
 
 #undef DEF_FUNC
