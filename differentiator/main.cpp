@@ -3,8 +3,14 @@
 #include <cstdlib>
 #include <assert.h>
 
-
 const int MAX_INPUT_SIZE = 500;
+
+enum tree_data_types {
+    TREE_NUM,
+    TREE_VAR,
+    TREE_OP,
+    TREE_FUNC,
+};
 
 
 class Node { // make template label data type
@@ -12,23 +18,25 @@ private:
     char* label;
     Node* left;
     Node* right;
+    char data_type;
 
     void MakeLeftChild() {
         left = (Node*) calloc(1, sizeof(Node));
-        *left = Node("");
+        *left = Node("", 0);
     }
 
     void MakeRightChild() {
         right = (Node*) calloc(1, sizeof(Node));
-        *right = Node("");
+        *right = Node("", 0);
     }
 
 public:
-    Node(char* label) {
+    Node(char* label, char data_type) {
         this->label = (char*) calloc(strlen(label) + 1, sizeof(char));
         strcpy(this->label, label);
         left = nullptr;
         right = nullptr;
+        this->data_type = data_type;
     }
 
     /*~Node() {
@@ -44,6 +52,10 @@ public:
         free(right);
     }*/
 
+    char GetDataType() {
+        return data_type;
+    }
+
     bool IsLeaf(){
         return left == nullptr && right == nullptr;
     }
@@ -53,6 +65,7 @@ public:
 
         left->label = (char*) calloc(strlen(node.label) + 1, sizeof(char));
         strcpy(left->label, node.label);
+        left->data_type = node.data_type;
         if (node.left)
             left->AddLeftChild(*node.left);
         if (node.right)
@@ -65,6 +78,7 @@ public:
 
         right->label = (char*) calloc(strlen(node.label) + 1, sizeof(char));
         strcpy(right->label, node.label);
+        right->data_type = node.data_type;
         if (node.left)
             right->AddLeftChild(*node.left);
         if (node.right)
@@ -101,7 +115,9 @@ public:
         assert(file);
         assert(this);
 
+
         fprintf(file, "N%p [label=\"%s\"]\n", this, label);
+
 
         if (left) {
             fprintf(file, "N%p -> N%p\n", this, left);
@@ -134,6 +150,8 @@ public:
         return false;
     }
 
+
+
     friend void LoadNode(FILE* file, Node* node);
 };
 
@@ -141,16 +159,16 @@ class DiffTree {
 private:
     Node* root;
 public:
-    DiffTree(char* init_operator) {
+    DiffTree(char* init_str, char data_type) {
         root = (Node*) calloc(1, sizeof(Node));
-        *root = Node(init_operator);
+        *root = Node(init_str, data_type);
     }
 
     DiffTree(Node* root) {
         this->root = root;
     }
 
-    DiffTree(FILE* load_file) {
+    /*DiffTree(FILE* load_file) {
         assert(load_file);
 
         char ch = ' ';
@@ -164,7 +182,7 @@ public:
 
         LoadNode(load_file, root);
 
-    }
+    }*/
 
     /*~AkinatorTree() {
         root->~Node();
@@ -197,7 +215,6 @@ public:
     bool Find(char* label, int* path) {
         root->Find(label, 1, path);
     }
-
 };
 
 DiffTree* GetG(const char* s);
@@ -207,31 +224,26 @@ Node* GetT();
 Node* GetP();
 Node* GetF();
 bool IsFunction(char* string);
+DiffTree* Differentiate(DiffTree* tree);
+Node* Differentiate(Node* node);
+Node* DifferentiateOperator(Node* node);
 
 int main() {
 
-    DiffTree* tree = GetG("(-13-42*x)*1+7/(-8-9*sin(6+ ln(9)))");
-    tree->Show();
-    tree->Dump(fopen("dump.txt", "w"));
+    //DiffTree* tree = GetG("(-13-42*x)*1+7/(-8-9*sin(6+ ln(9)))");
+    //tree->Show();
+    //tree->Dump(fopen("dump.txt", "w"));
 
-   /* FILE * file = fopen("tree.dot", "w");
+    DiffTree* tree = GetG("x*7/6"); // TODO parse whitespaces
+    //tree->Show();
 
-    fprintf(file, "digraph tree{\n");
-
-    node->Show(file);
-
-    fprintf(file, "}");
-
-    fclose(file);
-
-    system("dot -Tpng tree.dot -o dump.png");
-    system("display dump.png");*/
-
+    DiffTree* new_tree = Differentiate(tree);
+    new_tree->Show();
 
     return 0;
 }
 
-void LoadNode(FILE* file, Node* node) {
+/*void LoadNode(FILE* file, Node* node) {
     const int LABELSIZE = 100;
 
     char cur_char = ' ';
@@ -272,7 +284,7 @@ void LoadNode(FILE* file, Node* node) {
 
     if (cur_char != '}')
         fprintf(stderr, "Parsing error. Expected }, received %c", cur_char);
-}
+} */
 
 const char* s = " ";
 
@@ -300,16 +312,17 @@ Node* GetN() {
     if (*s == 'x') {
         strncat(val, s, 1);
         s++;
+        *new_node = Node(val, TREE_VAR);
     } else {
         while ('0' <= *s && *s <= '9' || *s == '-' && first_char) {
             strncat(val, s, 1);
             s++;
             first_char = false;
         }
+        *new_node = Node(val, TREE_NUM);
     }
     printf("%s\n", val);
 
-    *new_node = Node(val);
 
     return new_node;
 }
@@ -331,7 +344,7 @@ Node* GetE() {
         assert(val);
 
         new_node = (Node*) calloc(1, sizeof(Node));
-        *new_node = Node(op);
+        *new_node = Node(op, TREE_OP);
 
         new_node->AddLeftChild(*node);
         new_node->AddRightChild(*val);
@@ -362,7 +375,7 @@ Node* GetT() {
         assert(val);
 
         new_node = (Node*) calloc(1, sizeof(Node));
-        *new_node = Node(op);
+        *new_node = Node(op, TREE_OP);
 
         new_node->AddLeftChild(*node);
         new_node->AddRightChild(*val);
@@ -424,7 +437,7 @@ Node* GetF() {
             printf("FUNC!");
 
             node = (Node*) calloc(1, sizeof(Node));
-            *node = Node(string);
+            *node = Node(string, TREE_FUNC);
 
             Node* new_node = GetP();
             node->AddRightChild(*new_node);
@@ -447,3 +460,102 @@ bool IsFunction(char* string) {
 }
 
 #undef DEF_FUNC
+
+
+DiffTree* Differentiate(DiffTree* tree) {
+    assert(tree);
+
+    DiffTree* new_tree = (DiffTree*) calloc(1, sizeof(DiffTree));
+    assert(new_tree);
+
+    *new_tree = DiffTree(Differentiate(tree->GetRoot()));
+
+    return new_tree;
+}
+
+Node* Differentiate(Node* node) {
+    assert(node);
+
+    Node* new_node = (Node*) calloc(1, sizeof(Node));
+
+    switch (node->GetDataType()) {
+        case TREE_VAR:
+            *new_node = Node("1", TREE_NUM);
+            break;
+        case TREE_NUM:
+            *new_node = Node("0", TREE_NUM);
+            break;
+        case TREE_OP:
+            return DifferentiateOperator(node);
+            break;
+    }
+
+    return new_node;
+}
+
+Node* DifferentiateOperator(Node* node) {
+    assert(node);
+
+    Node* new_node = (Node*) calloc(1, sizeof(Node)); // TODO add free()
+
+    printf(node->GetLabel());
+
+    if (!strcmp(node->GetLabel(), "+")) {     // TODO make macros for that???
+        *new_node = Node("+", TREE_OP);
+        new_node->AddLeftChild(*Differentiate(node->GetLeftChild()));
+        new_node->AddRightChild(*Differentiate(node->GetRightChild()));
+    }
+    else if (!strcmp(node->GetLabel(), "-")) {
+        *new_node = Node("-", TREE_OP);
+        new_node->AddLeftChild(*Differentiate(node->GetLeftChild()));
+        new_node->AddRightChild(*Differentiate(node->GetRightChild()));
+    }
+    else if (!strcmp(node->GetLabel(), "*")) {
+        *new_node = Node("+", TREE_OP);
+
+        Node* left = (Node*) calloc(1, sizeof(Node));
+        Node* right = (Node*) calloc(1, sizeof(Node));
+
+        *left = Node("*", TREE_OP);
+        left->AddLeftChild(*node->GetLeftChild());
+        left->AddRightChild(*Differentiate(node->GetRightChild()));
+
+        *right = Node("*", TREE_OP);
+        right->AddLeftChild(*Differentiate(node->GetLeftChild()));
+        right->AddRightChild(*node->GetRightChild());
+
+        new_node->AddLeftChild(*left);
+        new_node->AddRightChild(*right);
+    }
+    else if (!strcmp(node->GetLabel(), "/")) {
+        *new_node = Node("/", TREE_OP);
+
+        Node* left = (Node*) calloc(1, sizeof(Node));
+        Node* left_left = (Node*) calloc(1, sizeof(Node));
+        Node* left_right = (Node*) calloc(1, sizeof(Node));
+        Node* right = (Node*) calloc(1, sizeof(Node));
+
+
+        *left = Node("-", TREE_OP);
+
+        *left_left = Node("*", TREE_OP);
+        left_left->AddLeftChild(*Differentiate(node->GetLeftChild()));
+        left_left->AddRightChild(*node->GetRightChild());
+
+        *left_right = Node("*", TREE_OP);
+        left_right->AddLeftChild(*node->GetLeftChild());
+        left_right->AddRightChild(*Differentiate(node->GetRightChild()));
+
+        left->AddLeftChild(*left_left);
+        left->AddRightChild(*left_right);
+
+        *right = Node("*", TREE_OP);
+        right->AddLeftChild(*node->GetRightChild());
+        right->AddRightChild(*node->GetRightChild());
+
+        new_node->AddLeftChild(*left);
+        new_node->AddRightChild(*right);
+    }
+
+    return new_node;
+}
