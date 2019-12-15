@@ -1,0 +1,9 @@
+#ifndef DIFFERENTIATOR_FUNCS_H
+#define DIFFERENTIATOR_FUNCS_H
+
+DEF_FUNC(cos, "")
+DEF_FUNC(sin, "")
+DEF_FUNC(tan, "")
+DEF_FUNC(ln, "")
+
+#endif //DIFFERENTIATOR_FUNCS_H

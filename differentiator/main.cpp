@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <assert.h>
 
+
 const int MAX_INPUT_SIZE = 500;
 
 
@@ -141,11 +142,12 @@ Node* GetN();
 Node* GetE();
 Node* GetT();
 Node* GetP();
-
+Node* GetF();
+bool IsFunction(char* string);
 
 int main() {
 
-    Node* node = GetG("(-13-42)*1+7/(-8-9*(7+8))");
+    Node* node = GetG("(-13-42*x)*1+7/(-8-9*sin(6+ ln(9)))");
 
 
     FILE * file = fopen("tree.dot", "w");
@@ -185,17 +187,21 @@ Node* GetN() {
 
     char val[MAX_INPUT_SIZE] = "";
 
+    Node *new_node = (Node *) calloc(1, sizeof(Node));
     bool first_char = true;
 
-    while ('0' <= *s && *s <= '9' || *s == '-' && first_char) {
+    if (*s == 'x') {
         strncat(val, s, 1);
         s++;
-        first_char = false;
+    } else {
+        while ('0' <= *s && *s <= '9' || *s == '-' && first_char) {
+            strncat(val, s, 1);
+            s++;
+            first_char = false;
+        }
     }
-
     printf("%s\n", val);
 
-    Node* new_node = (Node*) calloc(1, sizeof(Node));
     *new_node = Node(val);
 
     return new_node;
@@ -266,6 +272,7 @@ Node* GetT() {
 
 Node* GetP() {
     Node* node = nullptr;
+
     printf("P %s\n", s);
 
     if (*s == '(') {
@@ -281,10 +288,55 @@ Node* GetP() {
         }
 
     }
-    else if (*s >= '0' && *s <= '9' || *s == '-'){
+    else if (*s >= '0' && *s <= '9' || *s == '-' || *s == 'x'){
         node = GetN();
         assert(node);
+    }
+    else if ((node = GetF()) == nullptr) {
+        fprintf(stderr, "Syntax error. Expected integer, function or parentheses, got %c", *s);
+        abort();
     }
 
     return node;
 }
+
+
+
+Node* GetF() {
+    printf("F %s\n", s);
+
+    Node* node = nullptr;
+    char string[MAX_INPUT_SIZE] = "";
+    int read_cnt = 0;
+
+    if (sscanf(s, " %[sincotanln]%n", string, &read_cnt)) {
+        s += read_cnt;
+
+        printf(string);
+        if (IsFunction(string)) {
+            printf("FUNC!");
+
+            node = (Node*) calloc(1, sizeof(Node));
+            *node = Node(string);
+
+            Node* new_node = GetP();
+            node->AddRightChild(*new_node);
+
+        }
+    }
+
+
+
+    return node;
+
+}
+
+#define DEF_FUNC(name, some_str)     \
+    if (!strcmp(string, #name)) return true;
+
+bool IsFunction(char* string) {
+    #include "funcs.h"
+    return false;
+}
+
+#undef DEF_FUNC
