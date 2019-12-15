@@ -104,13 +104,13 @@ public:
         fprintf(file, "N%p [label=\"%s\"]\n", this, label);
 
         if (left) {
-            fprintf(file, "N%p -> N%p [label=\"YES\" color=\"green4\" fontcolor=\"green4\"]\n", this, left);
+            fprintf(file, "N%p -> N%p\n", this, left);
             left->Show(file);
             fprintf(file, "\n");
         }
 
         if (right) {
-            fprintf(file, "N%p -> N%p [label=\"NO\" color=\"red4\" fontcolor=\"red4\"]\n", this, right);
+            fprintf(file, "N%p -> N%p\n", this, right);
             right->Show(file);
             fprintf(file, "\n");
         }
@@ -134,10 +134,73 @@ public:
         return false;
     }
 
-    //friend void LoadNode(FILE* file, Node* node);
+    friend void LoadNode(FILE* file, Node* node);
 };
 
-Node* GetG(const char* s);
+class DiffTree {
+private:
+    Node* root;
+public:
+    DiffTree(char* init_operator) {
+        root = (Node*) calloc(1, sizeof(Node));
+        *root = Node(init_operator);
+    }
+
+    DiffTree(Node* root) {
+        this->root = root;
+    }
+
+    DiffTree(FILE* load_file) {
+        assert(load_file);
+
+        char ch = ' ';
+        fscanf(load_file, "%c", &ch);
+
+        if (ch != '{') {
+            fprintf(stderr, "Parsing error. Expected {, received %c", ch);
+        }
+
+        root = (Node*) calloc(1, sizeof(Node));
+
+        LoadNode(load_file, root);
+
+    }
+
+    /*~AkinatorTree() {
+        root->~Node();
+        free(root);
+    }*/
+
+    Node* GetRoot() {
+        return root;
+    }
+
+    void Dump(FILE* fp) {
+        root->Dump(fp);
+    }
+
+    void Show(const char* filename = "tree.dot") {
+        FILE * file = fopen(filename, "w");
+
+        fprintf(file, "digraph tree{\n");
+
+        root->Show(file);
+
+        fprintf(file, "}");
+
+        fclose(file);
+
+        system("dot -Tpng tree.dot -o dump.png");
+        system("display dump.png");
+    }
+
+    bool Find(char* label, int* path) {
+        root->Find(label, 1, path);
+    }
+
+};
+
+DiffTree* GetG(const char* s);
 Node* GetN();
 Node* GetE();
 Node* GetT();
@@ -147,10 +210,11 @@ bool IsFunction(char* string);
 
 int main() {
 
-    Node* node = GetG("(-13-42*x)*1+7/(-8-9*sin(6+ ln(9)))");
+    DiffTree* tree = GetG("(-13-42*x)*1+7/(-8-9*sin(6+ ln(9)))");
+    tree->Show();
+    tree->Dump(fopen("dump.txt", "w"));
 
-
-    FILE * file = fopen("tree.dot", "w");
+   /* FILE * file = fopen("tree.dot", "w");
 
     fprintf(file, "digraph tree{\n");
 
@@ -161,25 +225,68 @@ int main() {
     fclose(file);
 
     system("dot -Tpng tree.dot -o dump.png");
-    system("display dump.png");
+    system("display dump.png");*/
 
 
     return 0;
 }
 
+void LoadNode(FILE* file, Node* node) {
+    const int LABELSIZE = 100;
+
+    char cur_char = ' ';
+    char label[LABELSIZE] = {};
+
+    fscanf(file, "%*[\"]%[^\"]%*[\"]", label);
+
+    node->label = (char*) calloc(strlen(label) + 1, sizeof(char));
+    strcpy(node->label, label);
+
+
+    fscanf(file, " %c ", &cur_char);
+
+    if (cur_char == '{') {
+        node->MakeLeftChild();
+        LoadNode(file, node->left);
+    } else if (cur_char == '}') {
+        return;
+    } else {
+        fprintf(stderr, "Parsing error. Expected { or }, received %c", cur_char);
+        abort();
+    }
+
+
+    fscanf(file, " %c ", &cur_char);
+
+    if (cur_char == '{') {
+        node->MakeRightChild();
+        LoadNode(file, node->right);
+    } else if (cur_char == '}') {
+        return;
+    } else {
+        fprintf(stderr, "Parsing error. Expected { or }, received %c", cur_char);
+        abort();
+    }
+
+    fscanf(file, " %c ", &cur_char);
+
+    if (cur_char != '}')
+        fprintf(stderr, "Parsing error. Expected }, received %c", cur_char);
+}
 
 const char* s = " ";
 
-Node* GetG(const char* str) {
+DiffTree* GetG(const char* str) {
     s = str;
 
     printf("G %s\n", s);
 
-    Node* val = GetE();
+    DiffTree* tree = (DiffTree*) calloc(1, sizeof(DiffTree()));
+     *tree =  DiffTree(GetE());
+
     // TODO assert(*s == '\0');
 
-
-    return val;
+    return tree;
 }
 
 Node* GetN() {
