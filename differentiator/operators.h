@@ -61,6 +61,21 @@ DEF_OP(/, val1 / val2, "\\frac", 1, {
 
 DEF_OP(^, pow(val1, val2), "^", 2, {
    if (node->GetRightChild()->HasVariable()) { // exponential показательная  a^x
+        *new_node = Node("*", TREE_OP);
+
+        Node* right = (Node*) calloc(1, sizeof(Node));
+        Node* right_right = (Node*) calloc(1, sizeof(Node));
+
+        *right = Node("*", TREE_OP);
+
+        *right_right = Node("ln", TREE_FUNC);
+        right_right->AddLeftChild(*node->GetLeftChild());
+
+        right->AddLeftChild(*node->GetRightChild());
+        right->AddRightChild(*right_right);
+
+        new_node->AddLeftChild(*node);
+        new_node->AddRightChild(*Differentiate(right));
 
    }
    else { // power степенная x^a

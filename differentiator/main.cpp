@@ -361,7 +361,7 @@ int main() {
 
     double res = 0.;
 
-    DiffTree* tree = GetG("x^0"); //TODO MakeTreeEasier before differentiation
+    DiffTree* tree = GetG("x^x"); //TODO MakeTreeEasier before differentiation
     MakeTreeEasier(tree)->Show();
     //tree->GetRoot()->Calculate(&res); // TODO parentheses with unary minus
 
