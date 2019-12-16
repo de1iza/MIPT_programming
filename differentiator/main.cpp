@@ -82,7 +82,7 @@ public:
         left->has_variable = node.has_variable;
 
         if(node.has_variable)
-            has_variable = true;
+            this->has_variable = true;
 
         if (node.left)
             left->AddLeftChild(*node.left);
@@ -101,7 +101,7 @@ public:
         right->has_variable = node.has_variable;
 
         if(node.has_variable)
-            has_variable = true;
+            this->has_variable = true;
 
         if (node.left)
             right->AddLeftChild(*node.left);
@@ -119,6 +119,23 @@ public:
     }
 
     char* GetLabel() {
+        return label;
+    }
+
+    void* GetLabelValue() { // TODO replace strtod with this method
+        char* end = nullptr;
+
+        if (data_type == TREE_NUM) {
+            double* val = (double*) calloc(1, sizeof(double));
+            *val = std::strtod(label, &end);
+            return val;
+        }
+        /*if (data_type == TREE_OP) {
+            char* op = (char*) calloc(1, sizeof(char));
+            *op = label[0];
+            return op;
+
+        }*/
         return label;
     }
 
@@ -203,7 +220,7 @@ public:
 
 
         if (data_type == TREE_OP) {
-            #define DEF_OP(op, code) else if (!strcmp(label, #op)) *result = val1 op val2;
+            #define DEF_OP(op, tex_repr, priority, code) else if (!strcmp(label, #op)) *result = val1 op val2;
 
             if (false) ;
             #include "operators.h"
@@ -321,11 +338,14 @@ Node* DifferentiateOperator(Node* node);
 Node* DifferentiateFunction(Node* node);
 DiffTree* Simplify(DiffTree* tree);
 Node* Simplify(Node* node);
+void MakeTex(DiffTree* tree, char* file_name = "diff.tex");
+void DumpToTex(Node* node, char parent_priority, FILE* fp);
+char GetOpPriority(Node* node);
 
 
 int main() {
 
-    //DiffTree* tree = GetG("(-13-42*x)*1+7/(-8-9*sin(6+ ln(9)))");
+    //DiffTree* tree = GetG("(-13-42*x)*1+7/(-8-9*sin(6+ln(9)))");
     //tree->Show();
     //tree->Dump(fopen("dump.txt", "w"));
 
@@ -333,18 +353,25 @@ int main() {
     //tree->Show();
 
     //DiffTree* new_tree = Differentiate(tree);
-    //new_tree->Show();
+    //new_tree->Show();   // TODO simplify x + x = 2*x and x - x = 0
 
     double res = 0.;
 
-    DiffTree* tree = GetG("sin(2+9+x)");
+    DiffTree* tree = GetG("x/(2+x)"); //TODO simplify before differentiation
     tree->Show();
     //tree->GetRoot()->Calculate(&res);
+
+
+
+    //printf("\n!! %lf\n", res);
 
     DiffTree* new_tree = Simplify(Differentiate(tree));
     new_tree->Show();
 
-    printf("\n!! %lf\n", res);
+    MakeTex(tree);
+
+
+    system("pdflatex diff.tex ; evince diff.pdf");
 
     return 0;
 }
@@ -600,7 +627,7 @@ Node* Differentiate(Node* node) {
     return new_node;
 }
 
-#define DEF_OP(op, code) \
+#define DEF_OP(op, tex_repr, priority, code) \
     else if (!strcmp(node->GetLabel(), #op)) code
 
 Node* DifferentiateOperator(Node* node) {
@@ -709,6 +736,11 @@ DiffTree* Simplify(DiffTree* tree) { //TODO optimize loop
 Node* Simplify(Node* node) {
     assert(node);
 
+    printf("\n");
+    node->Dump(stdout);
+    printf("\n");
+
+    printf("\nLABEL %s VAR %d\n", node->GetLabel(), node->HasVariable());
 
     if (node->HasVariable()) {
         printf("%s has VAR", node->GetLabel());
@@ -766,6 +798,13 @@ Node* Simplify(Node* node) {
                 }
             }
         }
+        else if (!strcmp(node->GetLabel(), "-")) {
+            if (right->GetDataType() == TREE_NUM) {
+                if (Compare(std::strtod(right->GetLabel(), &end), 0.0)) {
+                    return left;
+                }
+            }
+        }
 
         node->AddLeftChild(*left);
         if (node->GetDataType() != TREE_FUNC) {
@@ -797,3 +836,100 @@ Node* Simplify(Node* node) {
 bool Compare(double a, double b) {
     return fabs(a - b) <= EPS;
 }
+
+void MakeTex(DiffTree* tree, char* file_name) {
+    FILE* fp = fopen(file_name, "w");
+    fprintf(fp, "\\documentclass{article}\n"
+                "\\usepackage[14pt]{extsizes}\n"
+                "\\usepackage[utf8]{inputenc}\n"
+                "\n\\begin{document}\n");
+    fprintf(fp, "$ ");
+
+    fprintf(fp, "( ");
+    DumpToTex(tree->GetRoot(), GetOpPriority(tree->GetRoot()), fp);
+    fprintf(fp, ")' = ");
+
+
+    DiffTree* derivative = Simplify(Differentiate(tree));
+
+    DumpToTex(derivative->GetRoot(), GetOpPriority(derivative->GetRoot()), fp);
+
+    fprintf(fp, "$\n\\end{document}");
+
+    fclose(fp);
+
+}
+
+#define DEF_OP(op, tex_repr, priority, code)            \
+    else if (!strcmp(node->GetLabel(), #op)) {          \
+        return priority;                                \
+    }                                                   \
+
+char GetOpPriority(Node* node) {
+    if (false) ;
+    #include "operators.h"
+}
+
+#undef DEF_OP
+
+
+void DumpToTex(Node* node, char parent_priority, FILE* fp) { // TODO more universal: prefix or postfix tex operator notion
+
+    printf("\nPARENT PRIORITY %d\n", parent_priority);
+
+    bool parentheses = false;
+
+    if (node->GetDataType() == TREE_OP && parent_priority > GetOpPriority(node)) {
+        parentheses = true;
+    }
+
+    if (parentheses) {
+        fprintf(fp, "(");
+    }
+
+
+    if (node->GetDataType() == TREE_OP) { //TODO REFACTOR THIS IF
+        if (node->GetLabel()[0] == '/') {
+            fprintf(fp, "\\frac{ ");
+            if (node->GetLeftChild()) DumpToTex(node->GetLeftChild(), GetOpPriority(node), fp); // LEFT
+            fprintf(fp, "}{");
+            if (node->GetRightChild()) DumpToTex(node->GetRightChild(), GetOpPriority(node), fp); // RIGHT
+            fprintf(fp, "} ");
+
+            if (parentheses) {
+                fprintf(fp, ")");
+            }
+
+            return;
+        }
+    }
+
+
+    if (node->GetLeftChild()) DumpToTex(node->GetLeftChild(), GetOpPriority(node), fp); // LEFT
+
+    #define DEF_OP(op, tex_repr, priority, code)            \
+        else if (!strcmp(node->GetLabel(), #op)) {          \
+             fprintf(fp, tex_repr" ");                      \
+        }
+
+    if (node->GetDataType() == TREE_NUM) {
+        fprintf(fp, "%.2lf ", *((double*) node->GetLabelValue()));
+    }
+    else if (node->GetDataType() == TREE_OP){
+        if (false) ;
+        #include "operators.h"
+
+    }
+    else if (node->GetDataType() == TREE_VAR) {
+        fprintf(fp, "%s ", node->GetLabel());
+    }
+
+    #undef DEF_OP
+
+    if (node->GetRightChild()) DumpToTex(node->GetRightChild(), GetOpPriority(node), fp); // RIGHT
+
+    if (parentheses) {
+        fprintf(fp, ")");
+    }
+}
+
