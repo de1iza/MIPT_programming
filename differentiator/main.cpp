@@ -5,6 +5,8 @@
 #include <math.h>
 
 const int MAX_INPUT_SIZE = 500;
+const int MAX_LABEL_SIZE = 100;
+const double EPS = 0.0001;
 
 enum tree_data_types {
     TREE_NUM,
@@ -57,6 +59,10 @@ public:
         free(right);
     }*/
 
+    bool HasVariable() {
+        return has_variable;
+    }
+
     char GetDataType() {
         return data_type;
     }
@@ -71,8 +77,12 @@ public:
         left->label = (char*) calloc(strlen(node.label) + 1, sizeof(char));
         strcpy(left->label, node.label);
 
+
         left->data_type = node.data_type;
         left->has_variable = node.has_variable;
+
+        if(node.has_variable)
+            has_variable = true;
 
         if (node.left)
             left->AddLeftChild(*node.left);
@@ -89,6 +99,9 @@ public:
 
         right->data_type = node.data_type;
         right->has_variable = node.has_variable;
+
+        if(node.has_variable)
+            has_variable = true;
 
         if (node.left)
             right->AddLeftChild(*node.left);
@@ -113,7 +126,7 @@ public:
         assert(file);
 
         fprintf(file, "{");
-        fprintf(file, "\"%s\"", label);
+        fprintf(file, "\"%s\"%d", label, has_variable);
 
         if (left) left->Dump(file);
 
@@ -225,11 +238,12 @@ public:
 
     // TODO think about my encapsulation, isn't it stupid????
 
-    friend void CopyData(Node* node, void* label, char data_type);
+    friend Node* Simplify(Node* node);
+    //friend void CopyData(Node* node, void* label, char data_type);
     //friend void LoadNode(FILE* file, Node* node);
 };
 
-class DiffTree {            // TODO int -> float
+class DiffTree {
 private:
     Node* root;
 public:
@@ -291,6 +305,9 @@ public:
     }
 };
 
+bool Compare(double a, double b);
+bool Compare(Node* a, Node* b);
+bool Compare(DiffTree* a, DiffTree* b);
 DiffTree* GetG(const char* s);
 Node* GetN();
 Node* GetE();
@@ -302,6 +319,9 @@ DiffTree* Differentiate(DiffTree* tree);
 Node* Differentiate(Node* node);
 Node* DifferentiateOperator(Node* node);
 Node* DifferentiateFunction(Node* node);
+DiffTree* Simplify(DiffTree* tree);
+Node* Simplify(Node* node);
+
 
 int main() {
 
@@ -317,9 +337,13 @@ int main() {
 
     double res = 0.;
 
-    DiffTree* tree = GetG("ln(2.718281828)+2");
-    //tree->Show();
-    tree->GetRoot()->Calculate(&res);
+    DiffTree* tree = GetG("sin(2+9+x)");
+    tree->Show();
+    //tree->GetRoot()->Calculate(&res);
+
+    DiffTree* new_tree = Simplify(Differentiate(tree));
+    new_tree->Show();
+
     printf("\n!! %lf\n", res);
 
     return 0;
@@ -527,8 +551,6 @@ Node* GetF() {
         }
     }
 
-
-
     return node;
 
 }
@@ -622,3 +644,156 @@ Node* DifferentiateFunction(Node* node) { // TODO check zero division in calcula
 }
 
 #undef DEF_FUNC
+
+bool Compare(DiffTree* a, DiffTree* b) {
+    assert(a);
+    assert(b);
+
+    return Compare(a->GetRoot(), b->GetRoot());
+}
+
+bool Compare(Node* a, Node* b) {
+    assert(a);
+    assert(b);
+
+    if (strcmp(a->GetLabel(), b->GetLabel()))
+        return false;
+    if (a->GetDataType() != b->GetDataType())
+        return false;
+    if (a->HasVariable() != b->HasVariable())
+        return false;
+    if (a->GetLeftChild() == nullptr || b->GetLeftChild() == nullptr) {
+        if (a->GetLeftChild() != b->GetLeftChild())
+            return false;
+    }
+    if (a->GetRightChild() == nullptr || b->GetRightChild() == nullptr) {
+        if (a->GetRightChild() != b->GetRightChild())
+            return false;
+    }
+    if (a->GetLeftChild()) {
+        if (a->GetRightChild()) {
+            return Compare(a->GetLeftChild(), b->GetLeftChild()) && Compare(a->GetRightChild(), b->GetRightChild());
+        }
+        return Compare(a->GetLeftChild(), b->GetLeftChild());
+    }
+    else if (a->GetRightChild())
+        return Compare(a->GetRightChild(), b->GetRightChild());
+
+    return true;
+}
+
+DiffTree* Simplify(DiffTree* tree) { //TODO optimize loop
+    assert(tree);
+
+    DiffTree* new_tree1 = (DiffTree*) calloc(1, sizeof(DiffTree));
+    assert(new_tree1);
+    *new_tree1 = DiffTree(Simplify(tree->GetRoot()));
+
+    DiffTree* new_tree2 = (DiffTree*) calloc(1, sizeof(DiffTree));
+    *new_tree2 = DiffTree(Simplify(new_tree1->GetRoot()));
+
+    while (Compare(new_tree1, new_tree2) == 0) {
+
+        new_tree2 = new_tree1;
+
+        new_tree1 = (DiffTree*) calloc(1, sizeof(DiffTree));
+        *new_tree1 = DiffTree(Simplify(new_tree2->GetRoot()));
+
+    }
+
+
+    return new_tree1;
+}
+
+
+Node* Simplify(Node* node) {
+    assert(node);
+
+
+    if (node->HasVariable()) {
+        printf("%s has VAR", node->GetLabel());
+
+        if (node->GetDataType() == TREE_VAR) {
+            return node;
+        }
+        Node* left = Simplify(node->GetLeftChild());
+        Node* right = nullptr;
+
+        if (node->GetDataType() != TREE_FUNC)
+            right = Simplify(node->GetRightChild());
+
+
+        char* end = nullptr;
+
+        if (!strcmp(node->GetLabel(), "*")) {
+            if (left->GetDataType() == TREE_NUM) {
+                if (Compare(std::strtod(left->GetLabel(), &end), 1.0)) {
+                    return right;
+                }
+                if (Compare(std::strtod(left->GetLabel(), &end), 0.0)) {
+                    Node* new_node = (Node*) calloc(1, sizeof(Node));
+                    *new_node = Node("0", TREE_NUM);
+                    return new_node;
+                }
+            }
+            if (right->GetDataType() == TREE_NUM) {
+                if (Compare(std::strtod(right->GetLabel(), &end), 1.0)) {
+                    return left;
+                }
+                if (Compare(std::strtod(right->GetLabel(), &end), 0.0)) {
+                    Node* new_node = (Node*) calloc(1, sizeof(Node));
+                    *new_node = Node("0", TREE_NUM);
+                    return new_node;
+                }
+            }
+        }
+        else if (!strcmp(node->GetLabel(), "+")) {
+            if (left->GetDataType() == TREE_NUM) {
+                if (Compare(std::strtod(left->GetLabel(), &end), 0.0)) {
+                    return right;
+                }
+            }
+            if (right->GetDataType() == TREE_NUM) {
+                if (Compare(std::strtod(right->GetLabel(), &end), 0.0)) {
+                    return left;
+                }
+            }
+        }
+        else if (!strcmp(node->GetLabel(), "/")) {
+            if (right->GetDataType() == TREE_NUM) {
+                if (Compare(std::strtod(right->GetLabel(), &end), 1.0)) {
+                    return left;
+                }
+            }
+        }
+
+        node->AddLeftChild(*left);
+        if (node->GetDataType() != TREE_FUNC) {
+            node->AddRightChild(*right);
+            node->has_variable = (left->HasVariable() || right->HasVariable());
+        }
+        else {
+            node->has_variable = left->HasVariable();
+        }
+
+
+    }
+    else {
+        Node* new_node = (Node*) calloc(1, sizeof(Node));
+
+        char label[MAX_LABEL_SIZE] = "";
+        double value = 0.;
+        node->Calculate(&value);
+        sprintf(label, "%lf", value);
+        *new_node = Node(label, TREE_NUM);
+
+        return new_node;
+    }
+
+    return node;
+
+}
+
+bool Compare(double a, double b) {
+    return fabs(a - b) <= EPS;
+}
