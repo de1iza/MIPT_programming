@@ -2,6 +2,7 @@
 #include <string.h>
 #include <cstdlib>
 #include <assert.h>
+#include <math.h>
 
 const int MAX_INPUT_SIZE = 500;
 
@@ -19,6 +20,7 @@ private:
     Node* left;
     Node* right;
     char data_type;
+    bool has_variable;
 
     void MakeLeftChild() {
         left = (Node*) calloc(1, sizeof(Node));
@@ -32,11 +34,14 @@ private:
 
 public:
     Node(char* label, char data_type) {
+        assert(label);
+
         this->label = (char*) calloc(strlen(label) + 1, sizeof(char));
         strcpy(this->label, label);
         left = nullptr;
         right = nullptr;
         this->data_type = data_type;
+        has_variable = (data_type == TREE_VAR);
     }
 
     /*~Node() {
@@ -65,7 +70,10 @@ public:
 
         left->label = (char*) calloc(strlen(node.label) + 1, sizeof(char));
         strcpy(left->label, node.label);
+
         left->data_type = node.data_type;
+        left->has_variable = node.has_variable;
+
         if (node.left)
             left->AddLeftChild(*node.left);
         if (node.right)
@@ -78,7 +86,10 @@ public:
 
         right->label = (char*) calloc(strlen(node.label) + 1, sizeof(char));
         strcpy(right->label, node.label);
+
         right->data_type = node.data_type;
+        right->has_variable = node.has_variable;
+
         if (node.left)
             right->AddLeftChild(*node.left);
         if (node.right)
@@ -150,12 +161,75 @@ public:
         return false;
     }
 
+    bool Calculate(double* result) {
+        assert(result);
+
+        if (has_variable)
+            return false;
+
+        if (IsLeaf()) {
+            char* end = nullptr;
+            if (data_type == TREE_NUM) {
+                *result = std::strtod(label, &end);
+            }
+            else {
+                fprintf(stderr, "Wrong data_type in leaf: %d", data_type);
+                abort();
+            }
+            return true;
+        }
+
+        double val1 = 0., val2 = 0.;
+
+        if (left) {
+            left->Calculate(&val1);
+        }
+        if (right) {
+            right->Calculate(&val2);
+        }
 
 
-    friend void LoadNode(FILE* file, Node* node);
+        if (data_type == TREE_OP) {
+            #define DEF_OP(op, code) else if (!strcmp(label, #op)) *result = val1 op val2;
+
+            if (false) ;
+            #include "operators.h"
+            else {
+                fprintf(stderr, "Unknown operator %s\n", label);
+                return false;
+            }
+
+            #undef DEF_OP
+        }
+        else if (data_type == TREE_FUNC) {
+            #define DEF_FUNC(func, lib_func, code) else if (!strcmp(label, #func)) *result = lib_func(val1);
+
+            if (false) ;
+            #include "funcs.h"
+            else {
+                fprintf(stderr, "Unknown function %s\n", label);
+                return false;
+            }
+
+            #undef DEF_FUNC
+        }
+        else {
+            fprintf(stderr, "Calculation error.\n");
+            return false;
+        }
+
+        return true;
+
+    }
+
+
+    // TODO think about my encapsulation, isn't it stupid????
+
+    friend void CopyData(Node* node, void* label, char data_type);
+    //friend void LoadNode(FILE* file, Node* node);
 };
 
-class DiffTree {
+class DiffTree {            // TODO int -> float
 private:
     Node* root;
 public:
@@ -235,14 +309,22 @@ int main() {
     //tree->Show();
     //tree->Dump(fopen("dump.txt", "w"));
 
-    DiffTree* tree = GetG("x/3"); // TODO parse whitespaces
+    //DiffTree* tree = GetG("x/3"); // TODO parse whitespaces
     //tree->Show();
 
-    DiffTree* new_tree = Differentiate(tree);
-    new_tree->Show();
+    //DiffTree* new_tree = Differentiate(tree);
+    //new_tree->Show();
+
+    double res = 0.;
+
+    DiffTree* tree = GetG("ln(2.718281828)+2");
+    //tree->Show();
+    tree->GetRoot()->Calculate(&res);
+    printf("\n!! %lf\n", res);
 
     return 0;
 }
+
 
 /*void LoadNode(FILE* file, Node* node) {
     const int LABELSIZE = 100;
@@ -294,7 +376,7 @@ DiffTree* GetG(const char* str) {
 
     printf("G %s\n", s);
 
-    DiffTree* tree = (DiffTree*) calloc(1, sizeof(DiffTree()));
+    DiffTree* tree = (DiffTree*) calloc(1, sizeof(DiffTree));
      *tree =  DiffTree(GetE());
 
     // TODO assert(*s == '\0');
@@ -315,7 +397,7 @@ Node* GetN() {
         s++;
         *new_node = Node(val, TREE_VAR);
     } else {
-        while ('0' <= *s && *s <= '9' || *s == '-' && first_char) {
+        while ('0' <= *s && *s <= '9' || *s == '.' || *s == '-' && first_char) {
             strncat(val, s, 1);
             s++;
             first_char = false;
@@ -451,7 +533,7 @@ Node* GetF() {
 
 }
 
-#define DEF_FUNC(name, code)     \
+#define DEF_FUNC(name, lib_func, code)     \
     if (!strcmp(string, #name)) return true;
 
 bool IsFunction(char* string) {
@@ -496,8 +578,8 @@ Node* Differentiate(Node* node) {
     return new_node;
 }
 
-#define DEF_OP(operator, code) \
-    else if (!strcmp(node->GetLabel(), #operator)) code
+#define DEF_OP(op, code) \
+    else if (!strcmp(node->GetLabel(), #op)) code
 
 Node* DifferentiateOperator(Node* node) {
     assert(node);
@@ -521,7 +603,7 @@ Node* DifferentiateOperator(Node* node) {
 
 #undef DEF_OP
 
-#define DEF_FUNC(name, code)    \
+#define DEF_FUNC(name, lib_func, code)    \
     else if (!strcmp(node->GetLabel(), #name)) code
 
 Node* DifferentiateFunction(Node* node) { // TODO check zero division in calculation

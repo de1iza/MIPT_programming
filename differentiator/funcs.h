@@ -1,4 +1,4 @@
-DEF_FUNC(cos, {
+DEF_FUNC(cos, cos, {
     *new_node = Node("*", TREE_OP);
 
     Node* left = (Node*) calloc(1, sizeof(Node));
@@ -16,7 +16,7 @@ DEF_FUNC(cos, {
     new_node->AddRightChild(*Differentiate(node->GetLeftChild()));
 })
 
-DEF_FUNC(sin, {
+DEF_FUNC(sin, sin, {
     *new_node = Node("*", TREE_OP);
 
     Node* left = (Node*) calloc(1, sizeof(Node));
@@ -28,7 +28,7 @@ DEF_FUNC(sin, {
     new_node->AddRightChild(*Differentiate(node->GetLeftChild()));
 })
 
-DEF_FUNC(tg, {
+DEF_FUNC(tg, tan, {
     *new_node = Node("/", TREE_OP);
 
     Node* right = (Node*) calloc(1, sizeof(Node));
@@ -46,7 +46,7 @@ DEF_FUNC(tg, {
     new_node->AddRightChild(*right);
 })
 
-DEF_FUNC(ln, {
+DEF_FUNC(ln, log, {
     *new_node = Node("/", TREE_OP);
 
     new_node->AddLeftChild(*Differentiate(node->GetLeftChild()));
