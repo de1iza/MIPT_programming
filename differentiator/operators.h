@@ -1,17 +1,17 @@
-DEF_OP(+, "+", 0, {
+DEF_OP(+, val1 + val2, "+", 0, {
     *new_node = Node("+", TREE_OP);
     new_node->AddLeftChild(*Differentiate(node->GetLeftChild()));
     new_node->AddRightChild(*Differentiate(node->GetRightChild()));
 
 })
 
-DEF_OP(-, "-", 0, {
+DEF_OP(-, val1 - val2, "-", 0, {
     *new_node = Node("-", TREE_OP);
     new_node->AddLeftChild(*Differentiate(node->GetLeftChild()));
     new_node->AddRightChild(*Differentiate(node->GetRightChild()));
 })
 
-DEF_OP(*, "\\cdot", 1, {
+DEF_OP(*, val1 * val2, "\\cdot", 1, {
     *new_node = Node("+", TREE_OP);
 
     Node* left = (Node*) calloc(1, sizeof(Node));
@@ -29,7 +29,7 @@ DEF_OP(*, "\\cdot", 1, {
     new_node->AddRightChild(*right);
 })
 
-DEF_OP(/, "\\frac", 1, {
+DEF_OP(/, val1 / val2, "\\frac", 1, {
     *new_node = Node("/", TREE_OP);
 
     Node* left = (Node*) calloc(1, sizeof(Node));
@@ -57,4 +57,33 @@ DEF_OP(/, "\\frac", 1, {
     right->AddRightChild(*node->GetRightChild());
 
     new_node->AddRightChild(*right);
+})
+
+DEF_OP(^, pow(val1, val2), "^", 2, {
+   if (node->GetRightChild()->HasVariable()) { // exponential показательная  a^x
+
+   }
+   else { // power степенная x^a
+        *new_node = Node("*", TREE_OP);
+
+        Node* left = (Node*) calloc(1, sizeof(Node));
+        Node* left_right = (Node*) calloc(1, sizeof(Node));
+
+        *left = Node("*", TREE_OP);
+
+        *left_right = Node("^", TREE_OP);
+        left_right->AddLeftChild(*node->GetLeftChild());
+
+        left_right->AddRightChild(Node("-", TREE_OP));
+        left_right->GetRightChild()->AddLeftChild(*node->GetRightChild());
+        left_right->GetRightChild()->AddRightChild(Node("1", TREE_NUM));
+
+        left->AddLeftChild(*node->GetRightChild());
+        left->AddRightChild(*left_right);
+
+        new_node->AddLeftChild(*left);
+        new_node->AddRightChild(*Differentiate(node->GetLeftChild()));
+
+   }
+
 })

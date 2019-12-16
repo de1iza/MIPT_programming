@@ -15,7 +15,6 @@ enum tree_data_types {
     TREE_FUNC,
 };
 
-
 class Node { // make template label data type
 private:
     char* label;
@@ -220,7 +219,8 @@ public:
 
 
         if (data_type == TREE_OP) {
-            #define DEF_OP(op, tex_repr, priority, code) else if (!strcmp(label, #op)) *result = val1 op val2;
+            #define DEF_OP(op, eval_code, tex_repr, priority, deriv_code) \
+                else if (!strcmp(label, #op)) *result = eval_code;
 
             if (false) ;
             #include "operators.h"
@@ -331,6 +331,8 @@ Node* GetE();
 Node* GetT();
 Node* GetP();
 Node* GetF();
+Node* GetM();
+
 bool IsFunction(char* string);
 DiffTree* Differentiate(DiffTree* tree);
 Node* Differentiate(Node* node);
@@ -359,7 +361,7 @@ int main() {
 
     double res = 0.;
 
-    DiffTree* tree = GetG("sin(3*x)+sin(3*x)"); //TODO MakeTreeEasier before differentiation
+    DiffTree* tree = GetG("(4+2*x)^8"); //TODO MakeTreeEasier before differentiation
     MakeTreeEasier(tree)->Show();
     //tree->GetRoot()->Calculate(&res); // TODO parentheses with unary minus
 
@@ -497,7 +499,7 @@ Node* GetE() {
 Node* GetT() {
     printf("T %s\n", s);
 
-    Node* node = GetP();
+    Node* node = GetM();
     assert(node);
 
     Node* new_node = nullptr;
@@ -507,7 +509,7 @@ Node* GetT() {
         strncat(op, s, 1);
         s++;
 
-        Node* val = GetP();
+        Node* val = GetM();
         assert(val);
 
         new_node = (Node*) calloc(1, sizeof(Node));
@@ -519,8 +521,6 @@ Node* GetT() {
         node = new_node;
 
     }
-
-    node->Dump(stdout);
 
     return node;
 
@@ -584,6 +584,35 @@ Node* GetF() {
 
 }
 
+Node* GetM() {
+    printf("M %s\n", s);
+
+    Node* node = GetP();
+    assert(node);
+
+    Node* new_node = nullptr;
+
+    while (*s == '^') {
+        s++;
+
+        Node* pow = GetP();
+        assert(pow);
+
+        new_node = (Node*) calloc(1, sizeof(Node));
+        *new_node = Node("^", TREE_OP);
+
+        new_node->AddLeftChild(*node);
+        new_node->AddRightChild(*pow);
+
+        node = new_node;
+
+    }
+
+
+
+    return node;
+}
+
 #define DEF_FUNC(name, lib_func, code)     \
     if (!strcmp(string, #name)) return true;
 
@@ -629,8 +658,8 @@ Node* Differentiate(Node* node) {
     return new_node;
 }
 
-#define DEF_OP(op, tex_repr, priority, code) \
-    else if (!strcmp(node->GetLabel(), #op)) code
+#define DEF_OP(op, eval_code, tex_repr, priority, deriv_code) \
+    else if (!strcmp(node->GetLabel(), #op)) deriv_code
 
 Node* DifferentiateOperator(Node* node) {
     assert(node);
@@ -912,10 +941,10 @@ void MakeTex(DiffTree* tree, int n_derivative, char* file_name) {
 
 }
 
-#define DEF_OP(op, tex_repr, priority, code)            \
-    else if (!strcmp(node->GetLabel(), #op)) {          \
-        return priority;                                \
-    }                                                   \
+#define DEF_OP(op, eval_code, tex_repr, priority, deriv_code)            \
+    else if (!strcmp(node->GetLabel(), #op)) {                           \
+        return priority;                                                 \
+    }                                                                    \
 
 char GetOpPriority(Node* node) {
     if (false) ;
@@ -933,7 +962,8 @@ void DumpNodeToTex(Node* node, char parent_priority, FILE* fp) { // TODO more un
 
     bool parentheses = false;
 
-    if (node->GetDataType() == TREE_OP && parent_priority > GetOpPriority(node)) {
+    if (node->GetDataType() == TREE_OP && parent_priority > GetOpPriority(node) ||
+    node->GetDataType() == TREE_NUM && node->GetLabel()[0] == '-') {
         parentheses = true;
     }
 
@@ -942,7 +972,7 @@ void DumpNodeToTex(Node* node, char parent_priority, FILE* fp) { // TODO more un
     }
 
 
-    if (node->GetDataType() == TREE_OP) { //TODO REFACTOR THIS IF
+    if (node->GetDataType() == TREE_OP) { //TODO REFACTOR THIS. THE WORST FUNCTION EVER
         if (node->GetLabel()[0] == '/') {
             fprintf(fp, "\\frac{ ");
             if (node->GetLeftChild()) DumpNodeToTex(node->GetLeftChild(), GetOpPriority(node), fp); // LEFT
@@ -956,15 +986,25 @@ void DumpNodeToTex(Node* node, char parent_priority, FILE* fp) { // TODO more un
 
             return;
         }
+        if (node->GetLabel()[0] == '^') { // TODO parentheses? (actually, mozhno zabit')
+            if (node->GetLeftChild()) DumpNodeToTex(node->GetLeftChild(), GetOpPriority(node), fp);
+            fprintf(fp, "^{");
+            if (node->GetRightChild()) DumpNodeToTex(node->GetRightChild(), GetOpPriority(node), fp);
+            fprintf(fp, "} ");
+
+            return;
+        }
+
+
     }
 
     if (node->GetDataType() != TREE_FUNC) {
         if (node->GetLeftChild()) DumpNodeToTex(node->GetLeftChild(), GetOpPriority(node), fp); // LEFT
     }
 
-    #define DEF_OP(op, tex_repr, priority, code)            \
-        else if (!strcmp(node->GetLabel(), #op)) {          \
-             fprintf(fp, tex_repr" ");                      \
+    #define DEF_OP(op, eval_code, tex_repr, priority, deriv_code)                \
+        else if (!strcmp(node->GetLabel(), #op)) {                               \
+             fprintf(fp, tex_repr" ");                                           \
         }
 
     if (node->GetDataType() == TREE_NUM) {
