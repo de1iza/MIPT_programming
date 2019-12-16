@@ -255,7 +255,7 @@ public:
 
     // TODO think about my encapsulation, isn't it stupid????
 
-    friend Node* Simplify(Node* node);
+    friend Node* MakeTreeEasier(Node* node);
     //friend void CopyData(Node* node, void* label, char data_type);
     //friend void LoadNode(FILE* file, Node* node);
 };
@@ -336,8 +336,8 @@ DiffTree* Differentiate(DiffTree* tree);
 Node* Differentiate(Node* node);
 Node* DifferentiateOperator(Node* node);
 Node* DifferentiateFunction(Node* node);
-DiffTree* Simplify(DiffTree* tree);
-Node* Simplify(Node* node);
+DiffTree* MakeTreeEasier(DiffTree* tree);
+Node* MakeTreeEasier(Node* node);
 void MakeTex(DiffTree* tree, char* file_name = "diff.tex");
 void DumpToTex(Node* node, char parent_priority, FILE* fp);
 char GetOpPriority(Node* node);
@@ -353,11 +353,11 @@ int main() {
     //tree->Show();
 
     //DiffTree* new_tree = Differentiate(tree);
-    //new_tree->Show();   // TODO simplify x + x = 2*x and x - x = 0
+    //new_tree->Show();   // TODO MakeTreeEasier x + x = 2*x and x - x = 0
 
     double res = 0.;
 
-    DiffTree* tree = GetG("x/(2+x)"); //TODO simplify before differentiation
+    DiffTree* tree = GetG("x/(2+x)"); //TODO MakeTreeEasier before differentiation
     tree->Show();
     //tree->GetRoot()->Calculate(&res);
 
@@ -365,7 +365,7 @@ int main() {
 
     //printf("\n!! %lf\n", res);
 
-    DiffTree* new_tree = Simplify(Differentiate(tree));
+    DiffTree* new_tree = MakeTreeEasier(Differentiate(tree));
     new_tree->Show();
 
     MakeTex(tree);
@@ -709,22 +709,22 @@ bool Compare(Node* a, Node* b) {
     return true;
 }
 
-DiffTree* Simplify(DiffTree* tree) { //TODO optimize loop
+DiffTree* MakeTreeEasier(DiffTree* tree) { //TODO optimize loop
     assert(tree);
 
     DiffTree* new_tree1 = (DiffTree*) calloc(1, sizeof(DiffTree));
     assert(new_tree1);
-    *new_tree1 = DiffTree(Simplify(tree->GetRoot()));
+    *new_tree1 = DiffTree(MakeTreeEasier(tree->GetRoot()));
 
     DiffTree* new_tree2 = (DiffTree*) calloc(1, sizeof(DiffTree));
-    *new_tree2 = DiffTree(Simplify(new_tree1->GetRoot()));
+    *new_tree2 = DiffTree(MakeTreeEasier(new_tree1->GetRoot()));
 
     while (Compare(new_tree1, new_tree2) == 0) {
 
         new_tree2 = new_tree1;
 
         new_tree1 = (DiffTree*) calloc(1, sizeof(DiffTree));
-        *new_tree1 = DiffTree(Simplify(new_tree2->GetRoot()));
+        *new_tree1 = DiffTree(MakeTreeEasier(new_tree2->GetRoot()));
 
     }
 
@@ -733,7 +733,7 @@ DiffTree* Simplify(DiffTree* tree) { //TODO optimize loop
 }
 
 
-Node* Simplify(Node* node) {
+Node* MakeTreeEasier(Node* node) {
     assert(node);
 
     printf("\n");
@@ -748,11 +748,11 @@ Node* Simplify(Node* node) {
         if (node->GetDataType() == TREE_VAR) {
             return node;
         }
-        Node* left = Simplify(node->GetLeftChild());
+        Node* left = MakeTreeEasier(node->GetLeftChild());
         Node* right = nullptr;
 
         if (node->GetDataType() != TREE_FUNC)
-            right = Simplify(node->GetRightChild());
+            right = MakeTreeEasier(node->GetRightChild());
 
 
         char* end = nullptr;
@@ -850,7 +850,7 @@ void MakeTex(DiffTree* tree, char* file_name) {
     fprintf(fp, ")' = ");
 
 
-    DiffTree* derivative = Simplify(Differentiate(tree));
+    DiffTree* derivative = MakeTreeEasier(Differentiate(tree));
 
     DumpToTex(derivative->GetRoot(), GetOpPriority(derivative->GetRoot()), fp);
 
