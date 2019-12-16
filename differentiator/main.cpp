@@ -361,7 +361,7 @@ int main() {
 
     double res = 0.;
 
-    DiffTree* tree = GetG("(4+2*x)^8"); //TODO MakeTreeEasier before differentiation
+    DiffTree* tree = GetG("x^1"); //TODO MakeTreeEasier before differentiation
     MakeTreeEasier(tree)->Show();
     //tree->GetRoot()->Calculate(&res); // TODO parentheses with unary minus
 
@@ -845,6 +845,14 @@ Node* MakeTreeEasier(Node* node) {
                 Node* new_node = (Node*) calloc(1, sizeof(Node));
                 *new_node = Node("0", TREE_NUM);
                 return new_node;
+            }
+
+        }
+        else if (!strcmp(node->GetLabel(), "^")) {
+            if (right->GetDataType() == TREE_NUM) {
+                if (Compare(*((double*) right->GetLabelValue()), 1.0)) {
+                    return left;
+                }
             }
 
         }
