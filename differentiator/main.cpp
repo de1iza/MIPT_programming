@@ -361,7 +361,7 @@ int main() {
 
     double res = 0.;
 
-    DiffTree* tree = GetG("x^1"); //TODO MakeTreeEasier before differentiation
+    DiffTree* tree = GetG("x^0"); //TODO MakeTreeEasier before differentiation
     MakeTreeEasier(tree)->Show();
     //tree->GetRoot()->Calculate(&res); // TODO parentheses with unary minus
 
@@ -852,6 +852,11 @@ Node* MakeTreeEasier(Node* node) {
             if (right->GetDataType() == TREE_NUM) {
                 if (Compare(*((double*) right->GetLabelValue()), 1.0)) {
                     return left;
+                }
+                if (Compare(*((double*) right->GetLabelValue()), 0.0)) {
+                    Node* new_node = (Node*) calloc(1, sizeof(Node));
+                    *new_node = Node("1", TREE_NUM);
+                    return new_node;
                 }
             }
 
