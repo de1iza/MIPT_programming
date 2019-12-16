@@ -338,9 +338,11 @@ Node* DifferentiateOperator(Node* node);
 Node* DifferentiateFunction(Node* node);
 DiffTree* MakeTreeEasier(DiffTree* tree);
 Node* MakeTreeEasier(Node* node);
-void MakeTex(DiffTree* tree, char* file_name = "diff.tex");
-void DumpToTex(Node* node, char parent_priority, FILE* fp);
+void MakeTex(DiffTree* tree, int n_derivative = 2, char* file_name = "diff.tex");
+void DumpNodeToTex(Node* node, char parent_priority, FILE* fp);
+void WriteNDerivativeToTex(DiffTree* tree, int n_derivative, FILE* fp);
 char GetOpPriority(Node* node);
+
 
 
 int main() {
@@ -357,9 +359,9 @@ int main() {
 
     double res = 0.;
 
-    DiffTree* tree = GetG("x/(2+x)"); //TODO MakeTreeEasier before differentiation
-    tree->Show();
-    //tree->GetRoot()->Calculate(&res);
+    DiffTree* tree = GetG("sin(3*x)+sin(3*x)"); //TODO MakeTreeEasier before differentiation
+    MakeTreeEasier(tree)->Show();
+    //tree->GetRoot()->Calculate(&res); // TODO parentheses with unary minus
 
 
 
@@ -368,7 +370,7 @@ int main() {
     DiffTree* new_tree = MakeTreeEasier(Differentiate(tree));
     new_tree->Show();
 
-    MakeTex(tree);
+    MakeTex(tree, 3);
 
 
     system("pdflatex diff.tex ; evince diff.pdf");
@@ -728,7 +730,6 @@ DiffTree* MakeTreeEasier(DiffTree* tree) { //TODO optimize loop
 
     }
 
-
     return new_tree1;
 }
 
@@ -790,6 +791,13 @@ Node* MakeTreeEasier(Node* node) {
                     return left;
                 }
             }
+            if (Compare(node->GetLeftChild(), node->GetRightChild())) {
+                Node* new_node = (Node*) calloc(1, sizeof(Node));
+                *new_node = Node("*", TREE_OP);
+                new_node->AddLeftChild(Node("2", TREE_NUM));
+                new_node->AddRightChild(*node->GetLeftChild());
+                return new_node;
+            }
         }
         else if (!strcmp(node->GetLabel(), "/")) {
             if (right->GetDataType() == TREE_NUM) {
@@ -804,12 +812,18 @@ Node* MakeTreeEasier(Node* node) {
                     return left;
                 }
             }
+            if (Compare(node->GetLeftChild(), node->GetRightChild())) {
+                Node* new_node = (Node*) calloc(1, sizeof(Node));
+                *new_node = Node("0", TREE_NUM);
+                return new_node;
+            }
+
         }
 
         node->AddLeftChild(*left);
         if (node->GetDataType() != TREE_FUNC) {
             node->AddRightChild(*right);
-            node->has_variable = (left->HasVariable() || right->HasVariable());
+            node->has_variable = (left->HasVariable() || right->HasVariable()); //TODO MATHLOGIC!!???!
         }
         else {
             node->has_variable = left->HasVariable();
@@ -837,24 +851,62 @@ bool Compare(double a, double b) {
     return fabs(a - b) <= EPS;
 }
 
-void MakeTex(DiffTree* tree, char* file_name) {
+void WriteNDerivativeToTex(DiffTree* tree, int n_derivative, FILE* fp) {
+    assert(tree);
+    assert(fp);
+
+    DiffTree* tmp_tree = tree;
+    DiffTree* derivative = nullptr;
+
+    fprintf(fp, "$ f(x) = ");
+    DumpNodeToTex(tmp_tree->GetRoot(), GetOpPriority(tmp_tree->GetRoot()), fp);
+    fprintf(fp, "$ \\newline \n");
+
+    fprintf(fp, "Вычислим производную $f(x)$ $n$-ого порядка, где $n = %d$:\n", n_derivative);
+
+    for (int i = 1; i <= n_derivative; i++) {
+        fprintf(fp, "\\begin{center}\n"
+                    "\\begin{math}\n");
+        fprintf(fp, "f(x)^{(%d)} = ", i);
+
+        derivative = MakeTreeEasier(Differentiate(tmp_tree));
+        DumpNodeToTex(derivative->GetRoot(), GetOpPriority(derivative->GetRoot()), fp);
+
+        fprintf(fp, "\n\\end{math}\n"
+                    "\\end{center}\n");
+
+        tmp_tree = derivative;
+
+    }
+
+}
+
+void MakeTex(DiffTree* tree, int n_derivative, char* file_name) {
+    assert(tree);
+
     FILE* fp = fopen(file_name, "w");
+    assert(fp);
+
     fprintf(fp, "\\documentclass{article}\n"
+                "\\usepackage[english,russian]{babel}\n"
                 "\\usepackage[14pt]{extsizes}\n"
                 "\\usepackage[utf8]{inputenc}\n"
-                "\n\\begin{document}\n");
-    fprintf(fp, "$ ");
+                "\\linespread{1.6}\n");
 
-    fprintf(fp, "( ");
-    DumpToTex(tree->GetRoot(), GetOpPriority(tree->GetRoot()), fp);
-    fprintf(fp, ")' = ");
+    fprintf(fp, "\\title{Вычисление производной}\n"
+                "\\author{Демина Е. Ю.}\n"
+                "\\date{\\today}\n");
+
+    fprintf(fp, "\\begin{document}\n"
+                "\\maketitle\n"
+                "\\begin{flushleft}\n");
+
+    WriteNDerivativeToTex(tree, n_derivative, fp);
 
 
-    DiffTree* derivative = MakeTreeEasier(Differentiate(tree));
 
-    DumpToTex(derivative->GetRoot(), GetOpPriority(derivative->GetRoot()), fp);
-
-    fprintf(fp, "$\n\\end{document}");
+    fprintf(fp, "\\end{flushleft}\n"
+                "\\end{document}");
 
     fclose(fp);
 
@@ -873,7 +925,9 @@ char GetOpPriority(Node* node) {
 #undef DEF_OP
 
 
-void DumpToTex(Node* node, char parent_priority, FILE* fp) { // TODO more universal: prefix or postfix tex operator notion
+void DumpNodeToTex(Node* node, char parent_priority, FILE* fp) { // TODO more universal: prefix or postfix tex operator notion
+    assert(node);
+    assert(fp);
 
     printf("\nPARENT PRIORITY %d\n", parent_priority);
 
@@ -891,9 +945,9 @@ void DumpToTex(Node* node, char parent_priority, FILE* fp) { // TODO more univer
     if (node->GetDataType() == TREE_OP) { //TODO REFACTOR THIS IF
         if (node->GetLabel()[0] == '/') {
             fprintf(fp, "\\frac{ ");
-            if (node->GetLeftChild()) DumpToTex(node->GetLeftChild(), GetOpPriority(node), fp); // LEFT
+            if (node->GetLeftChild()) DumpNodeToTex(node->GetLeftChild(), GetOpPriority(node), fp); // LEFT
             fprintf(fp, "}{");
-            if (node->GetRightChild()) DumpToTex(node->GetRightChild(), GetOpPriority(node), fp); // RIGHT
+            if (node->GetRightChild()) DumpNodeToTex(node->GetRightChild(), GetOpPriority(node), fp); // RIGHT
             fprintf(fp, "} ");
 
             if (parentheses) {
@@ -904,8 +958,9 @@ void DumpToTex(Node* node, char parent_priority, FILE* fp) { // TODO more univer
         }
     }
 
-
-    if (node->GetLeftChild()) DumpToTex(node->GetLeftChild(), GetOpPriority(node), fp); // LEFT
+    if (node->GetDataType() != TREE_FUNC) {
+        if (node->GetLeftChild()) DumpNodeToTex(node->GetLeftChild(), GetOpPriority(node), fp); // LEFT
+    }
 
     #define DEF_OP(op, tex_repr, priority, code)            \
         else if (!strcmp(node->GetLabel(), #op)) {          \
@@ -923,10 +978,15 @@ void DumpToTex(Node* node, char parent_priority, FILE* fp) { // TODO more univer
     else if (node->GetDataType() == TREE_VAR) {
         fprintf(fp, "%s ", node->GetLabel());
     }
+    else if (node->GetDataType() == TREE_FUNC) {
+        fprintf(fp, "\\%s(", node->GetLabel());
+        DumpNodeToTex(node->GetLeftChild(), 0, fp);
+        fprintf(fp, ")");
+    }
 
     #undef DEF_OP
 
-    if (node->GetRightChild()) DumpToTex(node->GetRightChild(), GetOpPriority(node), fp); // RIGHT
+    if (node->GetRightChild()) DumpNodeToTex(node->GetRightChild(), GetOpPriority(node), fp); // RIGHT
 
     if (parentheses) {
         fprintf(fp, ")");
