@@ -190,18 +190,20 @@ public:
         return false;
     }
 
-    bool Calculate(double* result) {
+    bool Calculate(double* result, bool substitution, double x = 0.0) {
         assert(result);
 
-        if (has_variable)
-            return false;
+        if (!substitution)
+            if (has_variable)
+                return false;
 
         if (IsLeaf()) {
-            char* end = nullptr;
+            char *end = nullptr;
             if (data_type == TREE_NUM) {
                 *result = std::strtod(label, &end);
-            }
-            else {
+            } else if (substitution && data_type == TREE_VAR) {
+                *result = x;
+            } else {
                 fprintf(stderr, "Wrong data_type in leaf: %d", data_type);
                 abort();
             }
@@ -211,39 +213,41 @@ public:
         double val1 = 0., val2 = 0.;
 
         if (left) {
-            left->Calculate(&val1);
+            left->Calculate(&val1, substitution, x);
         }
         if (right) {
-            right->Calculate(&val2);
+            right->Calculate(&val2, substitution, x);
         }
 
 
         if (data_type == TREE_OP) {
-            #define DEF_OP(op, eval_code, tex_repr, priority, deriv_code) \
+#define DEF_OP(op, eval_code, tex_repr, priority, deriv_code) \
                 else if (!strcmp(label, #op)) *result = eval_code;
 
-            if (false) ;
-            #include "operators.h"
+            if (false);
+
+#include "operators.h"
+
             else {
                 fprintf(stderr, "Unknown operator %s\n", label);
                 return false;
             }
 
-            #undef DEF_OP
-        }
-        else if (data_type == TREE_FUNC) {
-            #define DEF_FUNC(func, lib_func, code) else if (!strcmp(label, #func)) *result = lib_func(val1);
+#undef DEF_OP
+        } else if (data_type == TREE_FUNC) {
+#define DEF_FUNC(func, lib_func, code) else if (!strcmp(label, #func)) *result = lib_func(val1);
 
-            if (false) ;
-            #include "funcs.h"
+            if (false);
+
+#include "funcs.h"
+
             else {
                 fprintf(stderr, "Unknown function %s\n", label);
                 return false;
             }
 
-            #undef DEF_FUNC
-        }
-        else {
+#undef DEF_FUNC
+        } else {
             fprintf(stderr, "Calculation error.\n");
             return false;
         }
@@ -251,9 +255,6 @@ public:
         return true;
 
     }
-
-
-    // TODO think about my encapsulation, isn't it stupid????
 
     friend Node* MakeTreeEasier(Node* node);
     //friend void CopyData(Node* node, void* label, char data_type);
@@ -332,7 +333,6 @@ Node* GetT();
 Node* GetP();
 Node* GetF();
 Node* GetM();
-
 bool IsFunction(char* string);
 DiffTree* Differentiate(DiffTree* tree);
 Node* Differentiate(Node* node);
@@ -340,12 +340,12 @@ Node* DifferentiateOperator(Node* node);
 Node* DifferentiateFunction(Node* node);
 DiffTree* MakeTreeEasier(DiffTree* tree);
 Node* MakeTreeEasier(Node* node);
-void MakeTex(DiffTree* tree, int n_derivative = 2, char* file_name = "diff.tex");
+void MakeTex(DiffTree* tree, int n_derivative = 2, double x_val = 0.0, char* file_name = "diff.tex");
 void DumpNodeToTex(Node* node, char parent_priority, FILE* fp);
 void WriteNDerivativeToTex(DiffTree* tree, int n_derivative, FILE* fp);
+void WriteDerivValToTex(DiffTree* tree, double x_val, FILE* fp);
+void WriteMaclaurinToTex(DiffTree* tree, int n, FILE* fp);
 char GetOpPriority(Node* node);
-
-
 
 int main() {
 
@@ -357,22 +357,24 @@ int main() {
     //tree->Show();
 
     //DiffTree* new_tree = Differentiate(tree);
-    //new_tree->Show();   // TODO MakeTreeEasier x + x = 2*x and x - x = 0
+    //new_tree->Show();
 
-    double res = 0.;
+    double res = 0.0;
 
-    DiffTree* tree = GetG("x^x"); //TODO MakeTreeEasier before differentiation
+    DiffTree* tree = GetG("cos(10*x)^2"); //TODO MakeTreeEasier before differentiation
     MakeTreeEasier(tree)->Show();
+
+    tree->GetRoot()->Calculate(&res, true, 1.5);
+    printf("\n~%lf\n", res);
     //tree->GetRoot()->Calculate(&res); // TODO parentheses with unary minus
 
+                                        //TODO do not calculate sin(5) etc
 
 
-    //printf("\n!! %lf\n", res);
+    //DiffTree* new_tree = MakeTreeEasier(Differentiate(tree));
+    //new_tree->Show();
 
-    DiffTree* new_tree = MakeTreeEasier(Differentiate(tree));
-    new_tree->Show();
-
-    MakeTex(tree, 3);
+    MakeTex(tree, 5, 9.5);
 
 
     system("pdflatex diff.tex ; evince diff.pdf");
@@ -808,6 +810,13 @@ Node* MakeTreeEasier(Node* node) {
                     return new_node;
                 }
             }
+            if (Compare(node->GetLeftChild(), node->GetRightChild())) {
+                Node* new_node = (Node*) calloc(1, sizeof(Node));
+                *new_node = Node("^", TREE_OP);
+                new_node->AddLeftChild(*node->GetLeftChild());
+                new_node->AddRightChild(Node("2", TREE_NUM));
+                return new_node;
+            }
         }
         else if (!strcmp(node->GetLabel(), "+")) {
             if (left->GetDataType() == TREE_NUM) {
@@ -859,6 +868,18 @@ Node* MakeTreeEasier(Node* node) {
                     return new_node;
                 }
             }
+            if (left->GetDataType() == TREE_NUM) {
+                if (Compare(*((double*) left->GetLabelValue()), 1.0)) {
+                    Node* new_node = (Node*) calloc(1, sizeof(Node));
+                    *new_node = Node("1", TREE_NUM);
+                    return new_node;
+                }
+                if (Compare(*((double*) left->GetLabelValue()), 0.0)) {
+                    Node* new_node = (Node*) calloc(1, sizeof(Node));
+                    *new_node = Node("0", TREE_NUM);
+                    return new_node;
+                }
+            }
 
         }
 
@@ -878,7 +899,7 @@ Node* MakeTreeEasier(Node* node) {
 
         char label[MAX_LABEL_SIZE] = "";
         double value = 0.;
-        node->Calculate(&value);
+        node->Calculate(&value, false);
         sprintf(label, "%lf", value);
         *new_node = Node(label, TREE_NUM);
 
@@ -923,7 +944,62 @@ void WriteNDerivativeToTex(DiffTree* tree, int n_derivative, FILE* fp) {
 
 }
 
-void MakeTex(DiffTree* tree, int n_derivative, char* file_name) {
+
+void WriteDerivValToTex(DiffTree* tree, double x_val, FILE* fp) {
+    assert(tree);
+    assert(fp);
+
+    double res = 0.0;
+    Differentiate(tree)->GetRoot()->Calculate(&res, true, x_val);
+
+    printf("RES %.3lf\n", res);
+
+    fprintf(fp, "Вычислим значение первой производной в точке $x = %.3lf: $\n", x_val);
+    fprintf(fp, "$ f'(%.3lf) = %.3lf $ \\newline \n", x_val, res);
+}
+
+void WriteMaclaurinToTex(DiffTree* tree, int n, FILE* fp) {
+    assert(tree);
+    assert(n);
+
+    fprintf(fp, "Разложение $f(x)$ в ряд Маклорена до %d-ого порядка малости: \n", n);
+    fprintf(fp, "\\begin{center}\n"
+                "\\begin{math}\n");
+
+
+    DiffTree* tmp_tree = tree;
+
+    double val = 0.0;
+    bool flag = false;
+    tree->GetRoot()->Calculate(&val, true, 0.0);
+
+    fprintf(fp, "f(x) = ");
+    if (val) {
+        fprintf(fp, "%.3lf ", val);
+        flag = true;
+    }
+
+    for (int i = 1; i <= n; i++) {
+        tmp_tree = Differentiate(tmp_tree);
+        tmp_tree->GetRoot()->Calculate(&val, true, 0.0);
+
+        if (!Compare(val, 0.0)) {
+            if (flag) fprintf(fp, "+ ");
+            if (i == 1) fprintf(fp, "\\frac {%.3lf}{%d!}x", val, i);
+            else fprintf(fp, "\\frac {%.3lf}{%d!} {x} ^ {%d} ", val, i, i);
+            flag = true;
+        }
+    }
+
+    fprintf(fp, "+ o(x^{%d}), x \\longrightarrow 0", n);
+
+    fprintf(fp, "\n\\end{math}\n"
+                "\\end{center}\n");
+
+}
+
+
+void MakeTex(DiffTree* tree, int n_derivative, double x_val, char* file_name) {
     assert(tree);
 
     FILE* fp = fopen(file_name, "w");
@@ -945,7 +1021,9 @@ void MakeTex(DiffTree* tree, int n_derivative, char* file_name) {
 
     WriteNDerivativeToTex(tree, n_derivative, fp);
 
+    WriteDerivValToTex(tree, x_val, fp);
 
+    WriteMaclaurinToTex(tree, 5, fp);
 
     fprintf(fp, "\\end{flushleft}\n"
                 "\\end{document}");
@@ -976,7 +1054,7 @@ void DumpNodeToTex(Node* node, char parent_priority, FILE* fp) { // TODO more un
     bool parentheses = false;
 
     if (node->GetDataType() == TREE_OP && parent_priority > GetOpPriority(node) ||
-    node->GetDataType() == TREE_NUM && node->GetLabel()[0] == '-') {
+    node->GetDataType() == TREE_NUM && node->GetLabel()[0] == '-' || parent_priority == 2 && GetOpPriority(node) == 2) {
         parentheses = true;
     }
 
@@ -999,12 +1077,16 @@ void DumpNodeToTex(Node* node, char parent_priority, FILE* fp) { // TODO more un
 
             return;
         }
-        if (node->GetLabel()[0] == '^') { // TODO parentheses? (actually, mozhno zabit')
+        if (node->GetLabel()[0] == '^') {
             if (node->GetLeftChild()) DumpNodeToTex(node->GetLeftChild(), GetOpPriority(node), fp);
+
             fprintf(fp, "^{");
             if (node->GetRightChild()) DumpNodeToTex(node->GetRightChild(), GetOpPriority(node), fp);
             fprintf(fp, "} ");
 
+            if (parentheses) {
+                fprintf(fp, ")");
+            }
             return;
         }
 
