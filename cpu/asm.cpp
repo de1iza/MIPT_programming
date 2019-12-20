@@ -32,7 +32,7 @@ bool is_memory_register(char* arg, int* reg_code, Param_t mem_type);
 int double_to_int(double val, int precision);
 
 int main() {
-    const char* INPUT_FILE = "func.txt";
+    const char* INPUT_FILE = "./code_examples/fib.txt";
     const char* BIN_FILE = "code.bin";
 
     line* commands = NULL;
