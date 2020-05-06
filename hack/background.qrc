@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/resources">
+        <file>img/progress_bar.gif</file>
+        <file>sounds/alt-j.mp3</file>
+        <file>sounds/music.mp3</file>
+        <file>img/matrix.gif</file>
+    </qresource>
+</RCC>
