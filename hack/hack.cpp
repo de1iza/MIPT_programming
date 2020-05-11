@@ -7,8 +7,9 @@ long long calculate_hash(const char* password, FILE* file, const long address) {
     long long offset = 0x0;
     long hash_byte = 0x0;
     long hash = 0x0;
+    size_t len = strlen(password);
 
-    for (size_t i = 1; i < strlen(password); ++i) {
+    for (size_t i = 1; i < len; ++i) {
         offset = address + password[i] + 1;
 
         fseek(file, offset, SEEK_SET);
@@ -27,7 +28,6 @@ void patch(const long byte, int count, const long address, FILE* file) {
 }
 
 int hack(const char* new_password, const char* filename) {
-    //const char* filename = "C:\\Users\\Deliza\\Desktop\\MIPT_prog\\hack\\hack.com";
     const long table_start = 0x0000007d;
     const long hash_address = 0x0000017d;
 
@@ -38,7 +38,6 @@ int hack(const char* new_password, const char* filename) {
         return 1;
     }
 
-    //printf("%s x", new_password);
 
     long new_hash = calculate_hash(new_password, file, table_start);
     patch(new_hash, 2, hash_address, file);
