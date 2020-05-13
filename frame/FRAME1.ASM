@@ -67,10 +67,10 @@ start:
 	
 	mov si, frame_height
 	shr si, 1
-	
-    mov ax, (FRAME_COLOUR shl 8) or FRAME_FILL_C
-    mov bx, ax
-    mov dx, ax
+
+	mov ax, (FRAME_COLOUR shl 8) or FRAME_FILL_C
+	mov bx, ax
+	mov dx, ax
 
 	call draw_frame
 	call delay
@@ -78,8 +78,8 @@ start:
 	mov di, frame_start_point
 	mov ax, (FRAME_COLOUR shl 8) or FRAME_FILL_C
 	mov bx, ax
-    mov dx, ax
-    mov cx, frame_width
+	mov dx, ax
+	mov cx, frame_width
 	mov si, frame_height
 
 	call draw_frame
