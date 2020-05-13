@@ -4,12 +4,9 @@ org 100h
 
 VIDEOSEG 			equ 0b800h
 
-;FRAME_WIDTH			equ 10d
-;FRAME_HEIGHT		equ 10d
 FRAME_COLOUR 		equ 35h
 SHADOW_COLOUR		equ 10h
 
-;FRAME_START_POINT	equ 2*(80*4+5)	
 
 HOR_BORDER_C		equ 205d
 VERT_BORDER_C		equ 186d
@@ -98,7 +95,7 @@ start:
 	; ---------------------------------------------------------
 	mov cx, MSG_LEN
 	lea si, msg
-	mov di, frame_start_point ;+ 2*(40*FRAME_HEIGHT) - MSG_LEN
+	mov di, frame_start_point
 
 	mov ax, frame_width
 	shr ax, 1
@@ -128,9 +125,8 @@ draw_shadow proc
 	shl ax, 1
 	mov bx, frame_start_point
 	add ax, bx
-	mov di, ax								;di = frame_start_point + 2*(80*frame_height + 1)
+	mov di, ax						;di = frame_start_point + 2*(80*frame_height + 1)
 
-	;mov di, frame_start_point + 2*(80*frame_height + 1)
 
 	mov cx, frame_width
 	mov ax, (SHADOW_COLOUR shl 8) or FRAME_FILL_C
@@ -146,12 +142,12 @@ draw_shadow proc
 	mov di, frame_start_point
 	add di, ax									; di = frame_start_point + 2*frame_width 
 
-	;mov di, frame_start_point + 2*frame_width
 
 	mov ax, bx							
 
 	mov cx, 0
 	vert_line_loop:
+		cld
 		stosw								; es:[di++] = ax
 		add di, 2*(80 - 1)					; di += 158
 		inc cx								; cx++
@@ -256,8 +252,10 @@ draw_row proc
 	push cx
 
     sub cx, 2		; cx -= 2 	
+	cld
     stosw			; es:[di++] = ax
     mov ax, bx		; ax = bx
+	cld
     rep stosw		; while (--cx) es:[di++] = ax;
     mov ax, dx		; ax = dx
     stosw			; es:[di++] = ax
