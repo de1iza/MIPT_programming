@@ -67,21 +67,17 @@ start:
 	
 	mov si, frame_height
 	shr si, 1
-
+	
     mov ax, (FRAME_COLOUR shl 8) or FRAME_FILL_C
     mov bx, ax
     mov dx, ax
-    
 
 	call draw_frame
-    call delay
+	call delay
 
-
-	; huge frame 70x15
-	;mov di, FRAME_START_POINT
 	mov di, frame_start_point
-    mov ax, (FRAME_COLOUR shl 8) or FRAME_FILL_C
-    mov bx, ax
+	mov ax, (FRAME_COLOUR shl 8) or FRAME_FILL_C
+	mov bx, ax
     mov dx, ax
     mov cx, frame_width
 	mov si, frame_height
@@ -102,9 +98,6 @@ start:
 	and al, 0FEh
 
 	add di, ax
-
-	;add di, ax
-	;add di, MSG_LEN
 
 	call write_text
 	; ---------------------------------------------------------
