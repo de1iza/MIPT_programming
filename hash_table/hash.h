@@ -30,7 +30,9 @@ uint32_t AvgAsciiHash(const std::string& str) {
 
 uint32_t XORHash(const std::string& str) {
 	uint32_t hash = 0;
-	for (int i = 0; i < str.length(); ++i) {
+	size_t len = str.length();
+
+	for (size_t i = 0; i < len; ++i) {
 		hash ^= str[i];
 		hash = (hash << 1) | (hash >> 31);
 	}
