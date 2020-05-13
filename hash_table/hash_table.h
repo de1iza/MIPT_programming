@@ -1,4 +1,3 @@
-#pragma once
 #include <vector>
 
 #include "list.h"
@@ -8,7 +7,8 @@ class HashTable {
 	using list_t = List<T>;
 private:
 	size_t size;
-	std::vector<list_t> data;
+
+	list_t* data;
 	uint32_t(*hash_func) (const T&);
 
 	size_t GetIndex(const T& val) const {
@@ -19,7 +19,14 @@ public:
 	HashTable(): size(0), hash_func(nullptr) {}
 
 	HashTable(size_t size, uint32_t(*func) (const T&)): size(size), hash_func(func) {
-		data = std::vector<list_t>(size, list_t());
+		data = new list_t[size];
+		for (size_t i = 0; i < size; ++i) {
+			data[i] = list_t();
+		}
+	}
+
+	~HashTable() {
+		delete[] data;
 	}
 
 	void Insert(const T& val) {
