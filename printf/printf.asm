@@ -6,7 +6,7 @@ global main
 
 section .text
 
-main: 
+main:
     push 127
     push '!'
     push 100
@@ -14,7 +14,8 @@ main:
     push arg_str
 
     call printf
-          
+    
+    lea rsp, [rsp + rbx*8]      ; remove args from stack
     
     mov rax, EXIT_CALL          ; system call for exit
     xor rdi, rdi                ; exit code 0
@@ -26,7 +27,7 @@ printf:
 ; --------------------------------------------------------------
 ; input: args in stack (stdcall)
 ;
-; output: 
+; output: rbx - argument counter
 ; destr: rdi, rax, rbx, rcx, rdx, r8, r9, r10, r11, rsi, r12
 ; --------------------------------------------------------------
     push rbp                            ; stack frame
@@ -96,10 +97,14 @@ printf:
         
         
      exit:   
+        dec rbx
         mov rsi, buf 
         call write_buf
-     
+        
+        
+        mov rsp, rbp
         pop rbp
+        
         ret
         
 check_overflow:
