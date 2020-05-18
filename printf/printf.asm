@@ -1,32 +1,22 @@
 ; ----------------------------------------------------------------------------------------
-;     nasm -felf64 hello.asm && ld hello.o && ./a.out
-;
-;     nasm -felf64 -F stabs hello.asm && ld -o hello hello.o && ./a.out
+;     nasm -felf64 printf.asm && ld printf.o && ./a.out
 ; ----------------------------------------------------------------------------------------
 
 global main
 
 section .text
 
-main:
-    mov rbp, rsp                  ; for correct debugging  
-     
-    mov rsi, format_str
-    
+main: 
     push 127
     push '!'
     push 100
     push 3802
     push arg_str
 
-    mov r12, buf
     call printf
           
-    mov rsi, buf 
-    call write_buf
     
-    
-    mov rax, EXIT_CALL                 ; system call for exit
+    mov rax, EXIT_CALL          ; system call for exit
     xor rdi, rdi                ; exit code 0
     syscall                     ; invoke operating system to exit
 
@@ -34,8 +24,7 @@ main:
 
 printf:
 ; --------------------------------------------------------------
-; input: rsi - address of format string
-;        r12 - start of buffer
+; input: args in stack (stdcall)
 ;
 ; output: 
 ; destr: rdi, rax, rbx, rcx, rdx, r8, r9, r10, r11, rsi, r12
@@ -43,16 +32,17 @@ printf:
     push rbp                            ; stack frame
     mov rbp, rsp
     
+    mov rsi, format_str
     mov rdi, rsi
     call strlen                         ; rcx = strlen
 
-    mov r11, r12                        ; r11 = buffer address 
+    mov r11, buf                        ; r11 = buffer address 
     
     xor rbx, rbx
     inc rbx                             ; rbx - argument counter
     
 
-    mov rdi, rsi                        ; rdi - address of current position in format string
+    mov rdi, rsi                 ; rdi - address of current position in format string
     parsing_loop:
         mov rsi, rdi                    ;  rsi = start address of current part (between %)
         
@@ -106,7 +96,9 @@ printf:
         
         
      exit:   
-        mov rsp, rbp
+        mov rsi, buf 
+        call write_buf
+     
         pop rbp
         ret
         
@@ -160,7 +152,7 @@ write_to_buf:
     mov r15, rax        ; registers
     push rcx            ;
     
-    mov rsi, r12
+    mov rsi, buf
     mov rdx, rcx
     
     call check_overflow
@@ -348,4 +340,3 @@ jump_table    dq bin                            ; 'b'
 
 format_str:   db "I %s %x. %d%%%c%b", 0h
 arg_str:      db "love", 0h
-
