@@ -3,19 +3,19 @@
 #include <vector>
 #include <ctime>
 #include <fstream>
-#include <chrono>
 
 #include "hash.h"
 #include "hash_table.h"
 
 
 template <typename T>
-double TimeTest(HashTable<T>& table, std::vector<T>& values, int n_iterations);
+double TimeTest(HashTable<T>& table, const std::vector<T>& values, const int n_iterations);
+
 bool ReadData(const std::string& filename, std::vector<std::string>& lines);
 
-/*
 int main() {
 	const int TABLE_SIZE = 3671;
+	const int n_iterations = 200;
 
 	std::vector<std::string> data;
 	HashTable<std::string> table = HashTable<std::string>(TABLE_SIZE, XORHash);
@@ -23,10 +23,10 @@ int main() {
 	if (!ReadData("data.txt", data))
 		return -1;
 
-	std::cout << TimeTest<std::string>(table, data, 100);
+	std::cout << "Time elapsed: " << TimeTest<std::string>(table, data, n_iterations) << " ms";
 
 	return 0;
-}*/
+}
 
 template <typename T>
 double TimeTest(HashTable<T>& table, const std::vector<T>& values, const int n_iterations) {
@@ -61,5 +61,4 @@ bool ReadData(const std::string& filename, std::vector<std::string>& lines) {
 
 	return true;
 }
-
 
