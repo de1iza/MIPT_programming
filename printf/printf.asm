@@ -7,6 +7,7 @@ global main
 section .text
 
 main:
+    
     push 127
     push '!'
     push 100
@@ -14,8 +15,8 @@ main:
     push arg_str
 
     call printf
+    add rsp, 8*5                ; remove args from stack
     
-    lea rsp, [rsp + rbx*8]      ; remove args from stack
     
     mov rax, EXIT_CALL          ; system call for exit
     xor rdi, rdi                ; exit code 0
@@ -25,7 +26,7 @@ main:
 
 printf:
 ; --------------------------------------------------------------
-; input: args in stack (stdcall)
+; input: args in stack (CDECL)
 ;
 ; output: rbx - argument counter
 ; destr: rdi, rax, rbx, rcx, rdx, r8, r9, r10, r11, rsi, r12
@@ -43,7 +44,7 @@ printf:
     inc rbx                             ; rbx - argument counter
     
 
-    mov rdi, rsi                 ; rdi - address of current position in format string
+    mov rdi, rsi                        ; rdi - address of current position in format string
     parsing_loop:
         mov rsi, rdi                    ;  rsi = start address of current part (between %)
         
@@ -97,12 +98,10 @@ printf:
         
         
      exit:   
-        dec rbx
         mov rsi, buf 
         call write_buf
         
-        
-        mov rsp, rbp
+            
         pop rbp
         
         ret
