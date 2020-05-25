@@ -258,7 +258,7 @@ write_to_buf:
     print_dec_loop: 
         xor rdx, rdx
         mov rsi, 10
-        div rsi                  ; rax = rax / rsi, rdx = rax % rsi
+        div rsi                  ; rax = rdx:rax / rsi, rdx = rdx:rax % rsi
         mov dl, [dict + rdx]     ; dl = ascii code of digit
         
         mov [rcx], dl            ; put to buf
